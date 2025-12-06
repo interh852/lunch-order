@@ -3,36 +3,13 @@
  */
 
 /**
- * スプレッドシートからGeminiモデル名を取得する。
- * @returns {string|null} Geminiモデル名、またはエラーの場合はnull
- */
-function getGeminiModelNameFromSpreadsheet() {
-  const properties = PropertiesService.getScriptProperties();
-  const spreadsheetId = properties.getProperty('SPREADSHEET_ID');
-  if (!spreadsheetId) {
-    console.error('エラー: スクリプトプロパティ「SPREADSHEET_ID」が設定されていません。');
-    return null;
-  }
-  const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(PROMPT_SHEET_NAME);
-  if (!sheet) {
-    console.error(`エラー: スプレッドシートに「${PROMPT_SHEET_NAME}」シートが見つかりません。`);
-    return null;
-  }
-  const modelName = sheet.getRange(GEMINI_MODEL_CELL).getValue();
-  if (!modelName) {
-    console.log(`Geminiモデル名がスプレッドシートの${GEMINI_MODEL_CELL}セルに設定されていません。デフォルトモデルを使用します。`);
-    return 'gemini-pro-vision'; // デフォルトモデル
-  }
-  return modelName;
-}
-
-/**
  * Gemini APIを呼び出し、レスポンスを返す
  * @param {string} prompt - Geminiに送信するプロンプト
  * @param {GoogleAppsScript.Base.Blob} pdfBlob - 解析対象のPDFファイルのBlob
+ * @param {string} modelName - 使用するGeminiのモデル名
  * @returns {Object|null} Geminiからのレスポンス（JSONオブジェクト）、またはエラーの場合はnull
  */
-function callGeminiApi(prompt, pdfBlob) {
+function callGeminiApi(prompt, pdfBlob, modelName) {
   const properties = PropertiesService.getScriptProperties();
   const apiKey = properties.getProperty('GEMINI_API_KEY');
 
@@ -42,9 +19,8 @@ function callGeminiApi(prompt, pdfBlob) {
   }
 
   try {
-    const modelName = getGeminiModelNameFromSpreadsheet();
     if (!modelName) {
-      // getGeminiModelNameFromSpreadsheet内でエラーログは出ているので、ここでは何もしない
+      console.error('エラー: モデル名が指定されていません。');
       return null;
     }
 

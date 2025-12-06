@@ -3,45 +3,22 @@
  */
 
 /**
- * スプレッドシートからGeminiプロンプトを取得する。
- * @returns {string|null} Geminiプロンプト、またはエラーの場合は null
- */
-function getGeminiPromptFromSpreadsheet() {
-  const properties = PropertiesService.getScriptProperties();
-  const spreadsheetId = properties.getProperty('SPREADSHEET_ID');
-  if (!spreadsheetId) {
-    console.error('エラー: スクリプトプロパティ「SPREADSHEET_ID」が設定されていません。');
-    return null;
-  }
-  const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(PROMPT_SHEET_NAME);
-  if (!sheet) {
-    console.error(`エラー: スプレッドシートに「${PROMPT_SHEET_NAME}」シートが見つかりません。`);
-    return null;
-  }
-  const geminiPrompt = sheet.getRange(GEMINI_PROMPT_CELL).getValue();
-  if (!geminiPrompt) {
-    console.log(`Geminiプロンプトがスプレッドシートの${GEMINI_PROMPT_CELL}セルに設定されていません。処理を終了します。`);
-    return null;
-  }
-  return geminiPrompt;
-}
-
-/**
  * PDFファイルからメニュー情報を解析して抽出する
  * @param {GoogleAppsScript.Drive.File} pdfFile - 解析対象のPDFファイル
  * @returns {Array<{date: string, menu: string}>|null} 抽出されたメニュー情報の配列、またはエラーの場合はnull
  */
 function parsePdfMenu(pdfFile) {
   try {
-    const pdfBlob = pdfFile.getBlob();
-    
-    // Geminiに送信するプロンプトをスプレッドシートから取得
-    const prompt = getGeminiPromptFromSpreadsheet();
-    if (!prompt) {
+    const config = getConfigFromSpreadsheet();
+    if (!config) {
+      console.error('スプレッドシートから設定を取得できませんでした。');
       return null;
     }
-
-    const geminiResponse = callGeminiApi(prompt, pdfBlob);
+    
+    const { prompt, modelName } = config;
+    const pdfBlob = pdfFile.getBlob();
+    
+    const geminiResponse = callGeminiApi(prompt, pdfBlob, modelName);
 
     if (geminiResponse && geminiResponse.candidates && geminiResponse.candidates.length > 0) {
       const content = geminiResponse.candidates[0].content.parts[0].text;

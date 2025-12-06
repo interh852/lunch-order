@@ -7,101 +7,16 @@
  */
 function processPdfMenuFiles() {
   try {
-    const properties = PropertiesService.getScriptProperties();
-    const menuFolderId = properties.getProperty('FOLDER_ID_MENU');
+    const folderInfo = getMenuFolderAndStoreName();
+    if (!folderInfo) return;
 
-    if (!menuFolderId) {
-      console.error('エラー: スクリプトプロパティ「FOLDER_ID_MENU」が設定されていません。');
-      return;
-    }
-
-    const menuFolder = DriveApp.getFolderById(menuFolderId);
-    
-    // 親フォルダ（店名）を取得
-    const parents = menuFolder.getParents();
-    if (!parents.hasNext()) {
-      console.error(`フォルダID「${menuFolderId}」の親フォルダが見つかりませんでした。`);
-      return;
-    }
-    const storeName = parents.next().getName();
-
-    const pdfFilesIterator = menuFolder.getFilesByType(MimeType.PDF);
-
-    // FileIteratorを配列に変換
-    const pdfFiles = [];
-    while (pdfFilesIterator.hasNext()) {
-      pdfFiles.push(pdfFilesIterator.next());
-    }
-
-    // ファイル名でソート
-    pdfFiles.sort((a, b) => {
-      if (a.getName() < b.getName()) return -1;
-      if (a.getName() > b.getName()) return 1;
-      return 0;
-    });
+    const { menuFolder, storeName } = folderInfo;
+    const pdfFiles = getSortedPdfFiles(menuFolder);
 
     let processedCount = 0;
-
     for (const pdfFile of pdfFiles) {
-      const fileName = pdfFile.getName();
-
-      // 既に処理済みのファイルはスキップ
-      if (fileName.includes('_processed')) {
-        console.log(`ファイル「${fileName}」は既に処理済みのためスキップします。`);
-        continue;
-      }
-
-      console.log(`ファイル「${fileName}」の処理を開始します。(店名: ${storeName})`);
-
-      // ファイル名から年と月を取得 (例: "2025.02.pdf")
-      const match = fileName.match(/(\d{4})\.(\d{2})/);
-      if (!match) {
-        console.error(`ファイル名「${fileName}」から年月を抽出できませんでした。スキップします。`);
-        continue;
-      }
-      const yearFromFile = match[1];
-      const monthFromFile = match[2];
-
-      // PDFを解析してメニューデータを抽出
-      const menuDataFromGemini = parsePdfMenu(pdfFile);
-
-      if (menuDataFromGemini && menuDataFromGemini.length > 0) {
-        
-        // menuDataの日付をファイル名の年月で上書きし、店名を追加してフォーマット
-        const updatedMenuData = menuDataFromGemini.map(item => {
-          const day = item.date.split('/')[2] || item.date.split('-')[2]; // "YYYY/MM/DD" または "YYYY-MM-DD" から "DD" を取得
-          return {
-            date: `${yearFromFile}-${monthFromFile}-${day.padStart(2, '0')}`,
-            storeName: storeName,
-            menu: item.menu
-          };
-        }).filter(item => item.date.split('-')[2]); // 日が正しく取得できたもののみフィルタリング
-
-        if (updatedMenuData.length === 0) {
-          console.log(`ファイル「${fileName}」から有効な日付を持つメニューデータが抽出されませんでした。`);
-          continue;
-        }
-
-        // 日付でソートする
-        updatedMenuData.sort((a, b) => {
-          return new Date(a.date).getTime() - new Date(b.date).getTime();
-        });
-
-        console.log('スプレッドシートへの書き込みデータ:', JSON.stringify(updatedMenuData, null, 2));
-        // メニューデータをスプレッドシートに書き込み
-        const writeSuccess = writeMenuDataToSpreadsheet(updatedMenuData);
-
-        if (writeSuccess) {
-          // 処理済みのファイル名を変更
-          const newFileName = `${fileName.replace(/\.pdf$/i, '')}_processed.pdf`;
-          pdfFile.setName(newFileName);
-          console.log(`ファイル「${fileName}」を処理し、「${newFileName}」にリネームしました。`);
-          processedCount++;
-        } else {
-          console.error(`ファイル「${fileName}」のメニューデータ書き込みに失敗しました。`);
-        }
-      } else {
-        console.log(`ファイル「${fileName}」からはメニューデータが抽出されませんでした。`);
+      if (processSinglePdfFile(pdfFile, storeName)) {
+        processedCount++;
       }
     }
 
@@ -114,5 +29,111 @@ function processPdfMenuFiles() {
   } catch (e) {
     console.error(`PDFメニューファイルの処理中にエラーが発生しました: ${e.message}`);
     console.error(`スタックトレース: ${e.stack}`);
+  }
+}
+
+/**
+ * スクリプトプロパティからメニューフォルダと店名を取得する
+ * @returns {{menuFolder: GoogleAppsScript.Drive.Folder, storeName: string}|null} フォルダと店名のオブジェクト、またはエラーの場合はnull
+ */
+function getMenuFolderAndStoreName() {
+  const properties = PropertiesService.getScriptProperties();
+  const menuFolderId = properties.getProperty('FOLDER_ID_MENU');
+
+  if (!menuFolderId) {
+    console.error('エラー: スクリプトプロパティ「FOLDER_ID_MENU」が設定されていません。');
+    return null;
+  }
+
+  const menuFolder = DriveApp.getFolderById(menuFolderId);
+  const parents = menuFolder.getParents();
+  if (!parents.hasNext()) {
+    console.error(`フォルダID「${menuFolderId}」の親フォルダが見つかりませんでした。`);
+    return null;
+  }
+  const storeName = parents.next().getName();
+
+  return { menuFolder, storeName };
+}
+
+/**
+ * 指定されたフォルダからPDFファイルを取得し、ファイル名でソートして返す
+ * @param {GoogleAppsScript.Drive.Folder} folder - PDFファイルが含まれるフォルダ
+ * @returns {Array<GoogleAppsScript.Drive.File>} ソートされたPDFファイルの配列
+ */
+function getSortedPdfFiles(folder) {
+  const pdfFilesIterator = folder.getFilesByType(MimeType.PDF);
+  const pdfFiles = [];
+  while (pdfFilesIterator.hasNext()) {
+    pdfFiles.push(pdfFilesIterator.next());
+  }
+
+  pdfFiles.sort((a, b) => {
+    if (a.getName() < b.getName()) return -1;
+    if (a.getName() > b.getName()) return 1;
+    return 0;
+  });
+
+  return pdfFiles;
+}
+
+/**
+ * 単一のPDFファイルを処理する
+ * @param {GoogleAppsScript.Drive.File} pdfFile - 処理対象のPDFファイル
+ * @param {string} storeName - 店名
+ * @returns {boolean} 処理が成功した場合はtrue、スキップまたは失敗した場合はfalse
+ */
+function processSinglePdfFile(pdfFile, storeName) {
+  const fileName = pdfFile.getName();
+
+  if (fileName.includes('_processed')) {
+    console.log(`ファイル「${fileName}」は既に処理済みのためスキップします。`);
+    return false;
+  }
+
+  console.log(`ファイル「${fileName}」の処理を開始します。(店名: ${storeName})`);
+
+  const match = fileName.match(/(\d{4})\.(\d{2})/);
+  if (!match) {
+    console.error(`ファイル名「${fileName}」から年月を抽出できませんでした。スキップします。`);
+    return false;
+  }
+  const yearFromFile = match[1];
+  const monthFromFile = match[2];
+
+  const menuDataFromGemini = parsePdfMenu(pdfFile);
+
+  if (!menuDataFromGemini || menuDataFromGemini.length === 0) {
+    console.log(`ファイル「${fileName}」からはメニューデータが抽出されませんでした。`);
+    return false;
+  }
+
+  const updatedMenuData = menuDataFromGemini.map(item => {
+    const day = item.date.split('/')[2] || item.date.split('-')[2];
+    return {
+      date: `${yearFromFile}-${monthFromFile}-${day.padStart(2, '0')}`,
+      storeName: storeName,
+      menu: item.menu
+    };
+  }).filter(item => item.date.split('-')[2]);
+
+  if (updatedMenuData.length === 0) {
+    console.log(`ファイル「${fileName}」から有効な日付を持つメニューデータが抽出されませんでした。`);
+    return false;
+  }
+
+  updatedMenuData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  console.log('スプレッドシートへの書き込みデータ:', JSON.stringify(updatedMenuData, null, 2));
+  const writeSuccess = writeMenuDataToSpreadsheet(updatedMenuData);
+
+  if (writeSuccess) {
+    const newFileName = `${fileName.replace(/\.pdf$/i, '')}_processed.pdf`;
+    pdfFile.setName(newFileName);
+    console.log(`ファイル「${fileName}」を処理し、「${newFileName}」にリネームしました。`);
+    return true;
+  } else {
+    console.error(`ファイル「${fileName}」のメニューデータ書き込みに失敗しました。`);
+    return false;
   }
 }
