@@ -86,7 +86,7 @@ function getSortedPdfFiles(folder) {
 function processSinglePdfFile(pdfFile, storeName) {
   const fileName = pdfFile.getName();
 
-  if (fileName.includes('_processed')) {
+  if (fileName.includes(PROCESSED_SUFFIX)) {
     console.log(`ファイル「${fileName}」は既に処理済みのためスキップします。`);
     return false;
   }
@@ -128,7 +128,7 @@ function processSinglePdfFile(pdfFile, storeName) {
   const writeSuccess = writeMenuDataToSpreadsheet(updatedMenuData);
 
   if (writeSuccess) {
-    const newFileName = `${fileName.replace(/\.pdf$/i, '')}_processed.pdf`;
+    const newFileName = `${fileName.replace(/\.pdf$/i, '')}${PROCESSED_SUFFIX}.pdf`;
     pdfFile.setName(newFileName);
     console.log(`ファイル「${fileName}」を処理し、「${newFileName}」にリネームしました。`);
     return true;

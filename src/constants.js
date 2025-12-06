@@ -11,5 +11,8 @@ const GMAIL_QUERY_CELL = 'B2';
 const GEMINI_MODEL_CELL = 'B3';
 const GEMINI_PROMPT_CELL = 'B4';
 
+// ファイル関連
+const PROCESSED_SUFFIX = '_processed';
+
 // メニューPDFのファイル名パターン
 const MENU_PDF_PATTERN = /^\d{4}|\d{2}\./;
