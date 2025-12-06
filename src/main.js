@@ -1,6 +1,13 @@
 /**
- * メイン関数（GASのトリガーから呼び出されるエントリーポイント）
+ * Gmailの添付ファイルを保存する機能をトリガーから呼び出すための関数
  */
-function main() {
+function triggerSaveAttachments() {
   saveGmailAttachmentsToDrive();
+}
+
+/**
+ * PDFメニューの処理機能をトリガーから呼び出すための関数
+ */
+function triggerProcessPdfMenus() {
+  processPdfMenuFiles();
 }

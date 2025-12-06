@@ -1,8 +1,3 @@
-// 設定値
-const PROMPT_SHEET_NAME = 'プロンプト';
-const GMAIL_QUERY_CELL = 'B2';
-
-
 /**
  * Gmailの添付ファイルをGoogle Driveに保存するメイン関数
  */

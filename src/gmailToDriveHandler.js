@@ -1,8 +1,3 @@
-// メニューPDFを抽出するための正規表現パターン（数字と.のみに正規化後のファイル名本体にマッチ）
-// 例: "2023.09", "24." など
-const MENU_PDF_PATTERN = /^\d{4}|\d{2}\./;
-
-
 /**
  * 添付ファイルをGoogle Driveに保存する（重複チェック・リネーム・フォルダ振分け付き）
  * @param {GoogleAppsScript.Gmail.GmailAttachment} attachment - 保存する添付ファイル
