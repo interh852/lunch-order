@@ -4,8 +4,10 @@
 主な機能は以下の通りです。
 
 -   Gmailに届いた添付ファイル（メニューPDF、注文書Excel）をGoogle Driveの指定フォルダに自動で保存します。
+    -   ExcelファイルはGoogleスプレッドシート形式に自動変換されます（Drive API v3を使用）。
 -   Driveに保存されたメニューPDFを自動で読み取り、Gemini APIを使って内容を解析し、スプレッドシートに日付、店名、弁当名を記録します。
 -   次週の弁当注文状況を定期的にSlackへ通知します。
+-   次週の注文内容を日付×サイズで集計し、オーダーカードスプレッドシートに自動転記します。
 
 ## 環境構築
 
@@ -94,6 +96,13 @@ GASのエディタ画面から、「トリガー」を開き、以下のトリ�
     -   時間ベースのトリガーのタイプ: `週ベースのタイマー`
     -   曜日を選択: `木曜日`
     -   時刻を選択: `午前7時 ～ 午前8時` (例: 毎週木曜日の朝に通知)
+4.  **オーダーカードへの注文転記**
+    -   実行する関数: `triggerWriteOrderCard`
+    -   実行するデプロイ: `Head`
+    -   イベントのソース: `時間主導型`
+    -   時間ベースのトリガーのタイプ: `週ベースのタイマー`
+    -   曜日を選択: `木曜日`
+    -   時刻を選択: `午後0時 ～ 午後1時` (例: 毎週木曜日の正午に転記)
 
 ## 開発
 
@@ -116,9 +125,10 @@ GASのエディタ画面から、「トリガー」を開き、以下のトリ�
 -   `src/debug.js`: デバッグ・テスト用の関数群（スクリプトエディタから手動実行）
 
 ### プロセッサー（処理フロー）
--   `src/processors/gmailAttachmentHandler.js`: Gmailの添付ファイルをDriveに保存する機能
+-   `src/processors/gmailAttachmentHandler.js`: Gmailの添付ファイルをDriveに保存する機能（Excel→Sheets自動変換含む）
 -   `src/processors/pdfMenuProcessor.js`: PDFメニューの処理フロー全体を管理する機能
 -   `src/processors/lunchOrderProcessor.js`: ランチ注文状況の処理とSlack通知を行うメインロジック
+-   `src/processors/orderCardWriter.js`: 次週の注文内容を集計してオーダーカードに転記する機能
 
 ### サービス（外部API連携）
 -   `src/services/geminiClient.js`: Gemini APIとの通信を処理する機能
@@ -168,7 +178,20 @@ GASのスクリプトエディタから手動で実行できます。
 -   `SpreadsheetApp`: Google スプレッドシートの操作
 -   `GmailApp`: Gmail の操作
 -   `DriveApp`: Google Drive の操作
+-   `Drive API (v3)`: Excel→Googleスプレッドシート自動変換（Advanced Service）
 -   `PropertiesService`: スクリプトプロパティの管理
 -   `UrlFetchApp`: 外部リソース（Gemini API, Slack API）へのHTTPリクエスト
 -   `Utilities`: ユーティリティ機能（Base64エンコードなど）
 -   `Gemini API`: PDFメニューの解析
+-   `Slack API`: メッセージ投稿
+
+### Advanced Servicesの有効化
+
+本プロジェクトでは、Excel→Googleスプレッドシート自動変換のために**Drive API v3**を使用しています。
+GASエディタで以下の手順で有効化してください。
+
+1.  GASエディタの左メニューから「サービス」を選択
+2.  「サービスを追加」をクリック
+3.  「Drive API」を選択
+4.  バージョンは「v3」を選択
+5.  「追加」をクリック
