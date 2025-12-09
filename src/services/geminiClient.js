@@ -10,17 +10,14 @@
  * @returns {Object|null} Geminiからのレスポンス（JSONオブジェクト）、またはエラーの場合はnull
  */
 function callGeminiApi(prompt, pdfBlob, modelName) {
-  const properties = PropertiesService.getScriptProperties();
-  const apiKey = properties.getProperty('GEMINI_API_KEY');
-
-  if (!apiKey) {
-    console.error('エラー: スクリプトプロパティ「GEMINI_API_KEY」が設定されていません。');
-    return null;
-  }
-
+  const logger = getContextLogger('callGeminiApi');
+  
   try {
+    const propertyManager = getPropertyManager();
+    const apiKey = propertyManager.getGeminiApiKey();
+
     if (!modelName) {
-      console.error('エラー: モデル名が指定されていません。');
+      logger.error('エラー: モデル名が指定されていません。');
       return null;
     }
 
@@ -34,7 +31,7 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
             { "text": prompt },
             {
               "inline_data": {
-                "mime_type": "application/pdf",
+                "mime_type": MIME_TYPES.PDF,
                 "data": pdfBase64
               }
             }
@@ -44,13 +41,13 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
     };
 
     const options = {
-      'method': 'post',
-      'contentType': 'application/json',
+      'method': HTTP_METHODS.POST,
+      'contentType': HTTP_CONTENT_TYPES.JSON,
       'payload': JSON.stringify(requestBody),
       'muteHttpExceptions': true // エラー時に例外をスローさせない
     };
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+    const url = `${API_ENDPOINTS.GEMINI_BASE_URL}/${modelName}:generateContent?key=${apiKey}`;
     const response = UrlFetchApp.fetch(url, options);
     const responseCode = response.getResponseCode();
     const responseBody = response.getContentText();
@@ -58,14 +55,13 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
     if (responseCode === 200) {
       return JSON.parse(responseBody);
     } else {
-      console.error(`Gemini APIの呼び出しに失敗しました。ステータスコード: ${responseCode}`);
-      console.error(`レスポンス: ${responseBody}`);
+      logger.error(`Gemini APIの呼び出しに失敗しました。ステータスコード: ${responseCode}`);
+      logger.error(`レスポンス: ${responseBody}`);
       return null;
     }
 
   } catch (e) {
-    console.error(`Gemini APIの呼び出し中にエラーが発生しました: ${e.message}`);
-    console.error(`スタックトレース: ${e.stack}`);
+    handleError(e, 'callGeminiApi');
     return null;
   }
 }

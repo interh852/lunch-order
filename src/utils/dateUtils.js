@@ -21,21 +21,8 @@ function getNextWeekdays(baseDate) {
 
   // 次の月曜日を計算
   let nextMonday = new Date(current.getTime());
-  if (dayOfWeek === 0) { // 日曜日の場合
-    nextMonday.setDate(current.getDate() + 1);
-  } else if (dayOfWeek === 1) { // 月曜日の場合
-    nextMonday.setDate(current.getDate() + 7);
-  } else if (dayOfWeek === 2) { // 火曜日の場合
-    nextMonday.setDate(current.getDate() + 6);
-  } else if (dayOfWeek === 3) { // 水曜日の場合
-    nextMonday.setDate(current.getDate() + 5);
-  } else if (dayOfWeek === 4) { // 木曜日の場合
-    nextMonday.setDate(current.getDate() + 4);
-  } else if (dayOfWeek === 5) { // 金曜日の場合
-    nextMonday.setDate(current.getDate() + 3);
-  } else if (dayOfWeek === 6) { // 土曜日の場合
-    nextMonday.setDate(current.getDate() + 2);
-  }
+  const daysUntilNextMonday = (1 - dayOfWeek + 7) % 7;
+  nextMonday.setDate(current.getDate() + (daysUntilNextMonday === 0 ? 7 : daysUntilNextMonday));
 
   // YYYY/MM/DD形式の関数
   const formatDate = (date) => {
