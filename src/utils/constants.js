@@ -144,6 +144,30 @@ const DATE_FORMATS = {
 };
 
 // ========================================
+// オーダーカードレイアウト
+// ========================================
+const ORDER_CARD_LAYOUT = {
+  FIRST_WEEK_BASE_ROW: 8,    // 1週目の開始行
+  ROWS_PER_WEEK: 4,           // 週ごとの行数（大盛、普通、小盛、空行）
+  COLUMN_OFFSET: 4,           // D列から開始
+  COLUMNS_PER_DAY: 2          // 各曜日ごとの列数
+};
+
+// ========================================
+// サイズカテゴリ
+// ========================================
+const SIZE_CATEGORIES = {
+  LARGE: '大盛',
+  REGULAR: '普通',
+  SMALL: '小盛'
+};
+
+const SIZE_KEYWORDS = {
+  LARGE: ['大', 'L'],
+  SMALL: ['小', 'S']
+};
+
+// ========================================
 // バリデーション関数
 // ========================================
 
@@ -194,6 +218,32 @@ function validateRequiredSheets(spreadsheetId) {
       error: e.message
     };
   }
+}
+
+/**
+ * サイズ文字列を正規化してカテゴリを返す
+ * @param {string} size - サイズの文字列
+ * @returns {string} 正規化されたサイズカテゴリ（大盛、普通、小盛）
+ */
+function normalizeSizeCategory(size) {
+  if (!size) return SIZE_CATEGORIES.REGULAR;
+  
+  // 大盛の判定
+  for (const keyword of SIZE_KEYWORDS.LARGE) {
+    if (size.includes(keyword)) {
+      return SIZE_CATEGORIES.LARGE;
+    }
+  }
+  
+  // 小盛の判定
+  for (const keyword of SIZE_KEYWORDS.SMALL) {
+    if (size.includes(keyword)) {
+      return SIZE_CATEGORIES.SMALL;
+    }
+  }
+  
+  // デフォルトは普通
+  return SIZE_CATEGORIES.REGULAR;
 }
 
 /**

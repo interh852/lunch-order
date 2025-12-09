@@ -103,7 +103,8 @@ function saveAttachment(attachment, message, folders) {
 
     const { newFileName, targetFolder } = getAttachmentDestination(attachment, message, folders);
 
-    saveFileToDrive(attachment, newFileName, targetFolder, originalFileName);
+    const contentType = attachment.getContentType();
+    saveFileToDrive(attachment, newFileName, targetFolder, originalFileName, contentType);
 
   } catch (e) {
     const fileNameForError = (attachment && typeof attachment.getName === 'function') ? attachment.getName() : '不明なファイル';
@@ -151,12 +152,9 @@ function getAttachmentDestination(attachment, message, folders) {
     newFileName = `${year}.${month}.pdf`;
     targetFolder = folders.menu;
   } 
-  // Excelの場合はオーダーカードフォルダにリネームして保存
-  else if (contentType === MIME_TYPES.XLSX) {
-    newFileName = `オーダーカード${year}.${month}.xlsx`;
-    targetFolder = folders.orderCard;
-  } else if (contentType === MIME_TYPES.XLS) {
-    newFileName = `オーダーカード${year}.${month}.xls`;
+  // Excelの場合はオーダーカードフォルダにGoogleスプレッドシートとして保存
+  else if (contentType === MIME_TYPES.XLSX || contentType === MIME_TYPES.XLS) {
+    newFileName = `オーダーカード${year}.${month}`;
     targetFolder = folders.orderCard;
   }
   return { newFileName, targetFolder };
@@ -165,20 +163,73 @@ function getAttachmentDestination(attachment, message, folders) {
 /**
  * 添付ファイルをGoogle Driveに保存する（重複チェック付き）
  * @param {GoogleAppsScript.Gmail.GmailAttachment} attachment - 保存する添付ファイル
- * @param {string} newFileName - 保存するファイル名
+ * @param {string} newFileName - 保存するファイル名（拡張子なし）
+ * @param {GoogleAppsScript.Drive.Folder} targetFolder - 保存先フォルダ
+ * @param {string} originalFileName - 元のファイル名（ログ出力用）
+ * @param {string} contentType - MIMEタイプ
+ */
+function saveFileToDrive(attachment, newFileName, targetFolder, originalFileName, contentType) {
+  const logger = getContextLogger('saveFileToDrive');
+  
+  // Excelファイルの場合はGoogleスプレッドシートに変換して保存
+  if (contentType === MIME_TYPES.XLSX || contentType === MIME_TYPES.XLS) {
+    saveExcelAsSpreadsheet(attachment, newFileName, targetFolder, originalFileName);
+  } else {
+    // PDFなどその他のファイルはそのまま保存
+    const fullFileName = newFileName;
+    const files = targetFolder.getFilesByName(fullFileName);
+
+    if (files.hasNext()) {
+      logger.debug(`  - ファイル「${fullFileName}」は既に「${targetFolder.getName()}」フォルダに存在するため、スキップしました。`);
+    } else {
+      const blob = attachment.copyBlob();
+      blob.setName(fullFileName);
+      const file = targetFolder.createFile(blob);
+      logger.info(`  - ファイル「${file.getName()}」を「${targetFolder.getName()}」フォルダに保存しました。(元ファイル名: ${originalFileName})`);
+    }
+  }
+}
+
+/**
+ * ExcelファイルをGoogleスプレッドシートに変換して保存する
+ * 
+ * 【重要】この機能を使用するには、GASエディタで「Drive API (v3)」サービスを有効にする必要があります。
+ * 手順: GASエディタ → 左メニュー「サービス」→「Drive API」を追加 → バージョン「v3」を選択
+ * 
+ * @param {GoogleAppsScript.Gmail.GmailAttachment} attachment - 保存する添付ファイル
+ * @param {string} newFileName - 保存するファイル名（拡張子なし）
  * @param {GoogleAppsScript.Drive.Folder} targetFolder - 保存先フォルダ
  * @param {string} originalFileName - 元のファイル名（ログ出力用）
  */
-function saveFileToDrive(attachment, newFileName, targetFolder, originalFileName) {
-  const logger = getContextLogger('saveFileToDrive');
-  const files = targetFolder.getFilesByName(newFileName);
-
-  if (files.hasNext()) {
-    logger.debug(`  - ファイル「${newFileName}」は既に「${targetFolder.getName()}」フォルダに存在するため、スキップしました。`);
-  } else {
+function saveExcelAsSpreadsheet(attachment, newFileName, targetFolder, originalFileName) {
+  const logger = getContextLogger('saveExcelAsSpreadsheet');
+  
+  try {
+    // 既存のスプレッドシートがあるかチェック
+    const existingFiles = targetFolder.getFilesByName(newFileName);
+    if (existingFiles.hasNext()) {
+      logger.debug(`  - スプレッドシート「${newFileName}」は既に「${targetFolder.getName()}」フォルダに存在するため、スキップしました。`);
+      return;
+    }
+    
+    // ExcelファイルをGoogleスプレッドシートとして直接作成
     const blob = attachment.copyBlob();
-    blob.setName(newFileName);
-    const file = targetFolder.createFile(blob);
-    logger.info(`  - ファイル「${file.getName()}」を「${targetFolder.getName()}」フォルダに保存しました。(元ファイル名: ${originalFileName})`);
+    const resource = {
+      name: newFileName,
+      mimeType: MimeType.GOOGLE_SHEETS,
+      parents: [targetFolder.getId()]
+    };
+    
+    Drive.Files.create(resource, blob, {
+      supportsAllDrives: true
+    });
+    
+    logger.info(`  - ファイル「${newFileName}」をGoogleスプレッドシートとして「${targetFolder.getName()}」フォルダに保存しました。(元ファイル名: ${originalFileName})`);
+    
+  } catch (e) {
+    if (e.message && e.message.includes('Drive is not defined')) {
+      logger.error('Drive APIが有効になっていません。GASエディタで「サービス」から「Drive API (v3)」を追加してください。');
+    }
+    handleError(e, 'saveExcelAsSpreadsheet');
   }
 }
