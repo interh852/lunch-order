@@ -1,0 +1,230 @@
+/**
+ * プロジェクト全体で共有される定数
+ */
+
+// ========================================
+// シート関連の定数
+// ========================================
+const SHEET_NAMES = {
+  PROMPT: '情報',
+  MENU: 'メニュー',
+  ORDER_HISTORY: '注文履歴'
+};
+
+// 後方互換性のため個別定数も維持
+const PROMPT_SHEET_NAME = SHEET_NAMES.PROMPT;
+const MENU_SHEET_NAME = SHEET_NAMES.MENU;
+const ORDER_HISTORY_SHEET_NAME = SHEET_NAMES.ORDER_HISTORY;
+
+// ========================================
+// セル関連の定数
+// ========================================
+const CELL_ADDRESSES = {
+  C_MAIL_ADRESS: 'B2',
+  GMAIL_QUERY: 'B3',
+  GEMINI_MODEL: 'B4',
+  GEMINI_PROMPT: 'B5',
+  SLACK_BOT_TOKEN: 'B6',
+  SLACK_CHANNEL_ID: 'B7'
+};
+
+// 後方互換性のため個別定数も維持
+const C_MAIL_ADRESS_CELL = CELL_ADDRESSES.C_MAIL_ADRESS;
+const GMAIL_QUERY_CELL = CELL_ADDRESSES.GMAIL_QUERY;
+const GEMINI_MODEL_CELL = CELL_ADDRESSES.GEMINI_MODEL;
+const GEMINI_PROMPT_CELL = CELL_ADDRESSES.GEMINI_PROMPT;
+const SLACK_BOT_TOKEN_CELL = CELL_ADDRESSES.SLACK_BOT_TOKEN;
+const SLACK_CHANNEL_ID_CELL = CELL_ADDRESSES.SLACK_CHANNEL_ID;
+
+// ========================================
+// ファイル関連の定数
+// ========================================
+const FILE_CONSTANTS = {
+  PROCESSED_SUFFIX: '_processed',
+  MENU_PDF_PATTERN: /^\d{4}|\d{2}\./
+};
+
+// 後方互換性のため個別定数も維持
+const PROCESSED_SUFFIX = FILE_CONSTANTS.PROCESSED_SUFFIX;
+const MENU_PDF_PATTERN = FILE_CONSTANTS.MENU_PDF_PATTERN;
+
+// ========================================
+// スクリプトプロパティのキー
+// ========================================
+const PROPERTY_KEYS = {
+  FOLDER_ID_MENU: 'FOLDER_ID_MENU',
+  FOLDER_ID_ORDER_CARD: 'FOLDER_ID_ORDER_CARD',
+  SPREADSHEET_ID: 'SPREADSHEET_ID',
+  GEMINI_API_KEY: 'GEMINI_API_KEY'
+};
+
+// ========================================
+// 設定のバリデーション
+// ========================================
+const VALIDATION_CONFIG = {
+  // 必須のスクリプトプロパティ
+  requiredProperties: [
+    PROPERTY_KEYS.FOLDER_ID_MENU,
+    PROPERTY_KEYS.FOLDER_ID_ORDER_CARD,
+    PROPERTY_KEYS.SPREADSHEET_ID,
+    PROPERTY_KEYS.GEMINI_API_KEY
+  ],
+  
+  // 必須のシート
+  requiredSheets: [
+    SHEET_NAMES.PROMPT,
+    SHEET_NAMES.MENU,
+    SHEET_NAMES.ORDER_HISTORY
+  ],
+  
+  // 必須のセル
+  requiredCells: [
+    CELL_ADDRESSES.GMAIL_QUERY,
+    CELL_ADDRESSES.GEMINI_MODEL,
+    CELL_ADDRESSES.GEMINI_PROMPT,
+    CELL_ADDRESSES.SLACK_BOT_TOKEN,
+    CELL_ADDRESSES.SLACK_CHANNEL_ID
+  ]
+};
+
+// ========================================
+// MIMEタイプの定数
+// ========================================
+const MIME_TYPES = {
+  PDF: 'application/pdf',
+  XLSX: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  XLS: 'application/vnd.ms-excel'
+};
+
+// ========================================
+// HTTPリクエスト関連の定数
+// ========================================
+const HTTP_CONTENT_TYPES = {
+  JSON: 'application/json',
+  JSON_UTF8: 'application/json; charset=utf-8'
+};
+
+const HTTP_METHODS = {
+  GET: 'get',
+  POST: 'post',
+  PUT: 'put',
+  DELETE: 'delete'
+};
+
+// ========================================
+// 外部API関連の定数
+// ========================================
+const API_ENDPOINTS = {
+  SLACK_POST_MESSAGE: 'https://slack.com/api/chat.postMessage',
+  GEMINI_BASE_URL: 'https://generativelanguage.googleapis.com/v1beta/models'
+};
+
+// ========================================
+// スプレッドシート列インデックス（0-based）
+// ========================================
+const ORDER_HISTORY_COLUMNS = {
+  ORDER_PERSON_NAME: 2,  // C列 - 注文者名
+  ORDER_DATE: 3,         // D列 - 対象日付
+  ORDER_SIZE: 6          // G列 - サイズ
+};
+
+const MENU_COLUMNS = {
+  DATE: 0,        // A列 - 日付
+  STORE_NAME: 1,  // B列 - 店名
+  MENU: 2         // C列 - 弁当名
+};
+
+// ========================================
+// 日付フォーマット
+// ========================================
+const DATE_FORMATS = {
+  YYYY_MM_DD_SLASH: 'yyyy/MM/dd',
+  YYYY_MM_DD_HYPHEN: 'yyyy-mm-dd',
+  TIMESTAMP: 'yyyy-MM-dd HH:mm:ss'
+};
+
+// ========================================
+// バリデーション関数
+// ========================================
+
+/**
+ * スクリプトプロパティが全て設定されているかチェックする
+ * @returns {{valid: boolean, missing: string[]}} バリデーション結果
+ */
+function validateScriptProperties() {
+  const properties = PropertiesService.getScriptProperties();
+  const missing = [];
+  
+  VALIDATION_CONFIG.requiredProperties.forEach(key => {
+    if (!properties.getProperty(key)) {
+      missing.push(key);
+    }
+  });
+  
+  return {
+    valid: missing.length === 0,
+    missing: missing
+  };
+}
+
+/**
+ * スプレッドシートに必要なシートが全て存在するかチェックする
+ * @param {string} spreadsheetId スプレッドシートID
+ * @returns {{valid: boolean, missing: string[]}} バリデーション結果
+ */
+function validateRequiredSheets(spreadsheetId) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    const missing = [];
+    
+    VALIDATION_CONFIG.requiredSheets.forEach(sheetName => {
+      if (!spreadsheet.getSheetByName(sheetName)) {
+        missing.push(sheetName);
+      }
+    });
+    
+    return {
+      valid: missing.length === 0,
+      missing: missing
+    };
+  } catch (e) {
+    return {
+      valid: false,
+      missing: VALIDATION_CONFIG.requiredSheets,
+      error: e.message
+    };
+  }
+}
+
+/**
+ * 設定の完全なバリデーションを実行する
+ * @returns {{valid: boolean, errors: string[]}} バリデーション結果
+ */
+function validateConfiguration() {
+  const errors = [];
+  
+  // スクリプトプロパティのチェック
+  const propertiesResult = validateScriptProperties();
+  if (!propertiesResult.valid) {
+    errors.push(`未設定のスクリプトプロパティ: ${propertiesResult.missing.join(', ')}`);
+  }
+  
+  // スプレッドシートIDが設定されている場合はシートもチェック
+  const properties = PropertiesService.getScriptProperties();
+  const spreadsheetId = properties.getProperty(PROPERTY_KEYS.SPREADSHEET_ID);
+  if (spreadsheetId) {
+    const sheetsResult = validateRequiredSheets(spreadsheetId);
+    if (!sheetsResult.valid) {
+      if (sheetsResult.error) {
+        errors.push(`スプレッドシートへのアクセスエラー: ${sheetsResult.error}`);
+      } else {
+        errors.push(`未作成のシート: ${sheetsResult.missing.join(', ')}`);
+      }
+    }
+  }
+  
+  return {
+    valid: errors.length === 0,
+    errors: errors
+  };
+}

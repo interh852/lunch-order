@@ -5,14 +5,17 @@
 /**
  * PDFファイルからメニュー情報を解析して抽出する
  * @param {GoogleAppsScript.Drive.File} pdfFile - 解析対象のPDFファイル
- * @returns {Array<{date: string, menu: string}>|null} 抽出されたメニュー情報の配列、またはエラーの場合はnull
+ * @returns {Object} Result型のオブジェクト（成功時はdataにメニュー配列）
  */
 function parsePdfMenu(pdfFile) {
+  const logger = getContextLogger('parsePdfMenu');
+  
   try {
-    const config = getConfigFromSpreadsheet();
+    const config = getConfig();
     if (!config) {
-      console.error('スプレッドシートから設定を取得できませんでした。');
-      return null;
+      const error = '設定を取得できませんでした。';
+      logger.error(error);
+      return Result.failure(error);
     }
     
     const { prompt, modelName } = config;
@@ -25,15 +28,15 @@ function parsePdfMenu(pdfFile) {
       // GeminiからのレスポンスはJSONがマークダウンブロックに囲まれている場合があるため、それを取り除く
       const jsonString = content.replace(/```json/g, '').replace(/```/g, '').trim();
       const menuData = JSON.parse(jsonString);
-      return menuData;
+      return Result.success(menuData, `${menuData.length}件のメニューを抽出しました`);
     } else {
-      console.error('Geminiからの有効なレスポンスが得られませんでした。');
-      return null;
+      const error = 'Geminiからの有効なレスポンスが得られませんでした。';
+      logger.error(error);
+      return Result.failure(error, geminiResponse);
     }
 
   } catch (e) {
-    console.error(`PDFの解析中にエラーが発生しました: ${e.message}`);
-    console.error(`スタックトレース: ${e.stack}`);
-    return null;
+    handleError(e, 'parsePdfMenu');
+    return Result.failure(e);
   }
 }
