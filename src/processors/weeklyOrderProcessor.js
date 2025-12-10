@@ -1,11 +1,68 @@
 /**
- * 注文内容を集計してオーダーカードに転記するプロセッサー
+ * 週次注文処理プロセッサー
+ * 次週の注文内容を集計してオーダーカードに転記し、Gmail下書きを作成する
  */
+
+/**
+ * 次週の注文内容を集計してオーダーカードに転記し、Gmail下書きを作成する
+ */
+function processWeeklyOrdersAndCreateDraft() {
+  const logger = getContextLogger('processWeeklyOrdersAndCreateDraft');
+  
+  try {
+    // 1. オーダーカードに転記（差分も取得）
+    const result = writeOrdersToOrderCard();
+    
+    if (!result.hasOrders) {
+      logger.warn('注文データがないため、メール下書きは作成しません。');
+      return;
+    }
+    
+    // スプレッドシートへの書き込みを確実に反映させる
+    SpreadsheetApp.flush();
+    logger.info('スプレッドシートへの書き込みを完了しました。');
+    
+    // 2. 弁当屋さんのメールアドレスを取得
+    const propertyManager = getPropertyManager();
+    const bentoMailAddress = propertyManager.getBentoMailAddress();
+    
+    if (!bentoMailAddress) {
+      logger.error('BENTO_MAIL_ADDRESSが設定されていません。メール下書きの作成をスキップします。');
+      return;
+    }
+    
+    // 3. オーダーカードをExcel形式でエクスポート
+    const excelAttachments = exportMultipleSpreadsheetsAsExcel(result.orderCardFiles);
+    
+    if (!excelAttachments || excelAttachments.length === 0) {
+      logger.error('オーダーカードのエクスポートに失敗しました。');
+      return;
+    }
+    
+    // 4. Gmail下書きを作成
+    const draft = createOrderEmailDraft(
+      bentoMailAddress,
+      result.period,
+      result.changes,
+      excelAttachments
+    );
+    
+    if (draft) {
+      logger.info('Gmail下書きの作成が完了しました。');
+    } else {
+      logger.error('Gmail下書きの作成に失敗しました。');
+    }
+    
+  } catch (e) {
+    handleError(e, 'processWeeklyOrdersAndCreateDraft');
+  }
+}
 
 /**
  * 次週の注文内容を集計してオーダーカードに転記する
  * オーダーカードフォルダから最新のスプレッドシートを取得し、
  * 注文履歴から次週分の注文を日付×サイズで集計して書き込みます
+ * @returns {Object} 変更情報（差分データ）を含むオブジェクト
  */
 function writeOrdersToOrderCard() {
   const logger = getContextLogger('writeOrdersToOrderCard');
@@ -22,7 +79,7 @@ function writeOrdersToOrderCard() {
     
     if (orders.length === 0) {
       logger.warn('次週の注文データがありません。');
-      return;
+      return { hasOrders: false, changes: {}, period: { start: nextWeekdays[0], end: nextWeekdays[nextWeekdays.length - 1] } };
     }
     
     // 3. 日付×サイズごとに集計
@@ -33,7 +90,10 @@ function writeOrdersToOrderCard() {
     const datesByMonth = groupDateStringsByMonth(nextWeekdays);
     logger.info(`対象月数: ${Object.keys(datesByMonth).length}ヶ月`);
     
-    // 5. 月ごとにオーダーカードに書き込み
+    // 5. 月ごとにオーダーカードに書き込み（差分も記録）
+    const allChanges = {};
+    const orderCardFiles = {};
+    
     Object.keys(datesByMonth).forEach(yearMonth => {
       const dateStringsInMonth = datesByMonth[yearMonth];
       logger.info(`${yearMonth}のオーダーカード処理開始 (${dateStringsInMonth.length}日分)`);
@@ -47,14 +107,27 @@ function writeOrdersToOrderCard() {
       
       logger.info(`オーダーカード: ${orderCardSpreadsheet.getName()}`);
       
-      // その月の日付分だけ書き込み
-      writeAggregatedOrdersToSpreadsheet(orderCardSpreadsheet, aggregatedOrders, dateStringsInMonth);
+      // その月の日付分だけ書き込み（差分も取得）
+      const changes = writeAggregatedOrdersToSpreadsheet(orderCardSpreadsheet, aggregatedOrders, dateStringsInMonth);
+      allChanges[yearMonth] = changes;
+      orderCardFiles[yearMonth] = orderCardSpreadsheet;
     });
     
     logger.info('=== オーダーカード転記処理完了 ===');
     
+    return {
+      hasOrders: true,
+      changes: allChanges,
+      period: {
+        start: nextWeekdays[0],
+        end: nextWeekdays[nextWeekdays.length - 1]
+      },
+      orderCardFiles: orderCardFiles
+    };
+    
   } catch (e) {
     handleError(e, 'writeOrdersToOrderCard');
+    return { hasOrders: false, changes: {}, period: {}, error: e.message };
   }
 }
 
@@ -145,6 +218,7 @@ function aggregateOrdersByDateAndSize(orders) {
  * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} spreadsheet - オーダーカードスプレッドシート
  * @param {Object} aggregatedOrders - 集計された注文データ
  * @param {Array<string>} dateStrings - YYYY/MM/DD形式の日付文字列配列
+ * @returns {Object} 変更情報（前回値と現在値の差分）
  */
 function writeAggregatedOrdersToSpreadsheet(spreadsheet, aggregatedOrders, dateStrings) {
   const logger = getContextLogger('writeAggregatedOrdersToSpreadsheet');
@@ -167,6 +241,21 @@ function writeAggregatedOrdersToSpreadsheet(spreadsheet, aggregatedOrders, dateS
     const rowSmall = baseRow + 2;   // 小盛
     
     logger.debug(`書き込み行: 大盛=${rowLarge}, 普通=${rowRegular}, 小盛=${rowSmall}`);
+    
+    // 書き込み前に前回の値を読み取る
+    const previousValues = readPreviousOrderValues(sheet, weekNumber, dateStrings);
+    
+    // 書き込み前に対象週の全セルをクリア（月〜金の5日分）
+    const startColumn = ORDER_CARD_LAYOUT.COLUMN_OFFSET; // D列
+    const numDays = 5; // 月〜金
+    const numColumns = numDays * ORDER_CARD_LAYOUT.COLUMNS_PER_DAY;
+    
+    // 大盛、普通、小盛の3行をクリア
+    sheet.getRange(rowLarge, startColumn, 1, numColumns).clearContent();
+    sheet.getRange(rowRegular, startColumn, 1, numColumns).clearContent();
+    sheet.getRange(rowSmall, startColumn, 1, numColumns).clearContent();
+    
+    logger.debug(`${weekNumber}週目のセルをクリアしました (行: ${rowLarge}-${rowSmall}, 列: ${startColumn}-${startColumn + numColumns - 1})`);
     
     // 各曜日のデータを書き込み
     dateStrings.forEach((dateStr, index) => {
@@ -206,7 +295,93 @@ function writeAggregatedOrdersToSpreadsheet(spreadsheet, aggregatedOrders, dateS
     
     logger.info(`オーダーカードへの書き込みが完了しました。`);
     
+    // 差分を計算
+    const changes = calculateOrderChanges(previousValues, aggregatedOrders, dateStrings);
+    
+    return changes;
+    
   } catch (e) {
     handleError(e, 'writeAggregatedOrdersToSpreadsheet');
+    return {};
   }
+}
+
+/**
+ * オーダーカードから前回の注文数を読み取る
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - オーダーカードのシート
+ * @param {number} weekNumber - 週番号（1〜5）
+ * @param {Array<string>} dateStrings - YYYY/MM/DD形式の日付文字列配列
+ * @returns {Object} 日付ごとの前回注文数
+ */
+function readPreviousOrderValues(sheet, weekNumber, dateStrings) {
+  const logger = getContextLogger('readPreviousOrderValues');
+  const previousValues = {};
+  const baseRow = ORDER_CARD_LAYOUT.FIRST_WEEK_BASE_ROW + (weekNumber - 1) * ORDER_CARD_LAYOUT.ROWS_PER_WEEK;
+  
+  dateStrings.forEach(dateStr => {
+    const date = new Date(dateStr);
+    const dayOfWeek = date.getDay();
+    
+    if (dayOfWeek < 1 || dayOfWeek > 5) return; // 平日以外はスキップ
+    
+    const column = ORDER_CARD_LAYOUT.COLUMN_OFFSET + (dayOfWeek - 1) * ORDER_CARD_LAYOUT.COLUMNS_PER_DAY;
+    
+    previousValues[dateStr] = {
+      [SIZE_CATEGORIES.LARGE]: sheet.getRange(baseRow, column).getValue() || 0,
+      [SIZE_CATEGORIES.REGULAR]: sheet.getRange(baseRow + 1, column).getValue() || 0,
+      [SIZE_CATEGORIES.SMALL]: sheet.getRange(baseRow + 2, column).getValue() || 0
+    };
+  });
+  
+  logger.debug('前回値読み取り完了:', JSON.stringify(previousValues, null, 2));
+  return previousValues;
+}
+
+/**
+ * 注文数の変更を計算
+ * @param {Object} previousValues - 前回の注文数
+ * @param {Object} currentOrders - 現在の注文数
+ * @param {Array<string>} dateStrings - 対象日付の配列
+ * @returns {Object} 変更情報
+ */
+function calculateOrderChanges(previousValues, currentOrders, dateStrings) {
+  const logger = getContextLogger('calculateOrderChanges');
+  const changes = {};
+  
+  dateStrings.forEach(dateStr => {
+    const prev = previousValues[dateStr] || {
+      [SIZE_CATEGORIES.LARGE]: 0,
+      [SIZE_CATEGORIES.REGULAR]: 0,
+      [SIZE_CATEGORIES.SMALL]: 0
+    };
+    const curr = currentOrders[dateStr] || {
+      [SIZE_CATEGORIES.LARGE]: 0,
+      [SIZE_CATEGORIES.REGULAR]: 0,
+      [SIZE_CATEGORIES.SMALL]: 0
+    };
+    
+    const dateChanges = {};
+    let hasChange = false;
+    
+    [SIZE_CATEGORIES.LARGE, SIZE_CATEGORIES.REGULAR, SIZE_CATEGORIES.SMALL].forEach(size => {
+      const prevVal = prev[size] || 0;
+      const currVal = curr[size] || 0;
+      
+      if (prevVal !== currVal) {
+        dateChanges[size] = {
+          previous: prevVal,
+          current: currVal,
+          diff: currVal - prevVal
+        };
+        hasChange = true;
+      }
+    });
+    
+    if (hasChange) {
+      changes[dateStr] = dateChanges;
+    }
+  });
+  
+  logger.debug('差分計算完了:', JSON.stringify(changes, null, 2));
+  return changes;
 }

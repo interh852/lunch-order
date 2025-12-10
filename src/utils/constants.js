@@ -25,12 +25,13 @@ const CELL_ADDRESSES = {
   GEMINI_MODEL: 'B4',
   GEMINI_PROMPT: 'B5',
   SLACK_BOT_TOKEN: 'B6',
-  SLACK_CHANNEL_ID: 'B7'
+  SLACK_CHANNEL_ID: 'B7',
+  SENDER_NAME: 'B8',
+  COMPANY_NAME: 'B9'
 };
 
 // オーダーカード初期化用のセルアドレス
 const ORDER_CARD_INIT_CELL = 'J3';
-const ORDER_CARD_INIT_VALUE = 'CSS';
 
 // 後方互換性のため個別定数も維持
 const C_MAIL_ADRESS_CELL = CELL_ADDRESSES.C_MAIL_ADRESS;
@@ -39,6 +40,8 @@ const GEMINI_MODEL_CELL = CELL_ADDRESSES.GEMINI_MODEL;
 const GEMINI_PROMPT_CELL = CELL_ADDRESSES.GEMINI_PROMPT;
 const SLACK_BOT_TOKEN_CELL = CELL_ADDRESSES.SLACK_BOT_TOKEN;
 const SLACK_CHANNEL_ID_CELL = CELL_ADDRESSES.SLACK_CHANNEL_ID;
+const SENDER_NAME_CELL = CELL_ADDRESSES.SENDER_NAME;
+const COMPANY_NAME_CELL = CELL_ADDRESSES.COMPANY_NAME;
 
 // ========================================
 // ファイル関連の定数
@@ -59,7 +62,8 @@ const PROPERTY_KEYS = {
   FOLDER_ID_MENU: 'FOLDER_ID_MENU',
   FOLDER_ID_ORDER_CARD: 'FOLDER_ID_ORDER_CARD',
   SPREADSHEET_ID: 'SPREADSHEET_ID',
-  GEMINI_API_KEY: 'GEMINI_API_KEY'
+  GEMINI_API_KEY: 'GEMINI_API_KEY',
+  BENTO_MAIL_ADDRESS: 'BENTO_MAIL_ADDRESS'
 };
 
 // ========================================
@@ -129,6 +133,7 @@ const API_ENDPOINTS = {
 const ORDER_HISTORY_COLUMNS = {
   ORDER_PERSON_NAME: 2,  // C列 - 注文者名
   ORDER_DATE: 3,         // D列 - 対象日付
+  STORE_NAME: 4,         // E列 - 店名
   ORDER_SIZE: 6          // G列 - サイズ
 };
 
@@ -169,6 +174,16 @@ const SIZE_CATEGORIES = {
 const SIZE_KEYWORDS = {
   LARGE: ['大', 'L'],
   SMALL: ['小', 'S']
+};
+
+// ========================================
+// メール関連の定数
+// ========================================
+const EMAIL_TEMPLATES = {
+  SUBJECT_PREFIX: 'のお弁当について',
+  GREETING: '様\n\nいつもお世話になります。',
+  BODY_MAIN: '来週のお弁当のオーダーカードを添付の通り送付させて頂きます。',
+  CLOSING: '以上、よろしくお願いいたします。'
 };
 
 // ========================================

@@ -30,6 +30,41 @@ function saveGmailAttachmentsToDrive() {
 }
 
 /**
+ * 情報シートのB9セルから社名を取得
+ * @returns {string} 社名（取得できない場合は空文字列）
+ */
+function getCompanyNameFromPromptSheet() {
+  const logger = getContextLogger('getCompanyNameFromPromptSheet');
+  
+  try {
+    const propertyManager = getPropertyManager();
+    const spreadsheetId = propertyManager.getSpreadsheetId();
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    const sheet = spreadsheet.getSheetByName(PROMPT_SHEET_NAME);
+    
+    if (!sheet) {
+      logger.error(`シート「${PROMPT_SHEET_NAME}」が見つかりません。`);
+      return '';
+    }
+    
+    // B9セルから社名を取得
+    const companyName = sheet.getRange(COMPANY_NAME_CELL).getValue();
+    
+    if (!companyName) {
+      logger.warn('B9セルに社名が設定されていません。');
+      return '';
+    }
+    
+    logger.debug(`社名を取得しました: ${companyName}`);
+    return companyName;
+    
+  } catch (e) {
+    handleError(e, 'getCompanyNameFromPromptSheet');
+    return '';
+  }
+}
+
+/**
  * スクリプトプロパティからフォルダIDを取得し、対応するGoogle Driveフォルダオブジェクトを返す。
  * @returns {{menu: GoogleAppsScript.Drive.Folder, orderCard: GoogleAppsScript.Drive.Folder}|null} フォルダオブジェクト、またはエラーの場合は null
  */
@@ -224,12 +259,20 @@ function saveExcelAsSpreadsheet(attachment, newFileName, targetFolder, originalF
       supportsAllDrives: true
     });
     
-    // 作成されたスプレッドシートを開いて初期値を書き込む
+    // 作成されたスプレッドシートを開いて社名を書き込む
     try {
       const spreadsheet = SpreadsheetApp.openById(createdFile.id);
       const sheet = spreadsheet.getSheets()[0];
-      sheet.getRange(ORDER_CARD_INIT_CELL).setValue(ORDER_CARD_INIT_VALUE);
-      logger.debug(`  - ${ORDER_CARD_INIT_CELL}セルに"${ORDER_CARD_INIT_VALUE}"を書き込みました。`);
+      
+      // 情報シートのB9セルから社名を取得
+      const companyName = getCompanyNameFromPromptSheet();
+      
+      if (companyName) {
+        sheet.getRange(ORDER_CARD_INIT_CELL).setValue(companyName);
+        logger.debug(`  - ${ORDER_CARD_INIT_CELL}セルに"${companyName}"を書き込みました。`);
+      } else {
+        logger.warn(`  - 社名の取得に失敗しました。${ORDER_CARD_INIT_CELL}セルへの書き込みをスキップします。`);
+      }
     } catch (e) {
       logger.warn(`  - ${ORDER_CARD_INIT_CELL}セルへの書き込みに失敗しました: ${e.message}`);
     }
