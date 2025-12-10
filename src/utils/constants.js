@@ -28,6 +28,10 @@ const CELL_ADDRESSES = {
   SLACK_CHANNEL_ID: 'B7'
 };
 
+// オーダーカード初期化用のセルアドレス
+const ORDER_CARD_INIT_CELL = 'J3';
+const ORDER_CARD_INIT_VALUE = 'CSS';
+
 // 後方互換性のため個別定数も維持
 const C_MAIL_ADRESS_CELL = CELL_ADDRESSES.C_MAIL_ADRESS;
 const GMAIL_QUERY_CELL = CELL_ADDRESSES.GMAIL_QUERY;

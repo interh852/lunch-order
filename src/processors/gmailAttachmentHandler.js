@@ -220,9 +220,19 @@ function saveExcelAsSpreadsheet(attachment, newFileName, targetFolder, originalF
       parents: [targetFolder.getId()]
     };
     
-    Drive.Files.create(resource, blob, {
+    const createdFile = Drive.Files.create(resource, blob, {
       supportsAllDrives: true
     });
+    
+    // 作成されたスプレッドシートを開いて初期値を書き込む
+    try {
+      const spreadsheet = SpreadsheetApp.openById(createdFile.id);
+      const sheet = spreadsheet.getSheets()[0];
+      sheet.getRange(ORDER_CARD_INIT_CELL).setValue(ORDER_CARD_INIT_VALUE);
+      logger.debug(`  - ${ORDER_CARD_INIT_CELL}セルに"${ORDER_CARD_INIT_VALUE}"を書き込みました。`);
+    } catch (e) {
+      logger.warn(`  - ${ORDER_CARD_INIT_CELL}セルへの書き込みに失敗しました: ${e.message}`);
+    }
     
     logger.info(`  - ファイル「${newFileName}」をGoogleスプレッドシートとして「${targetFolder.getName()}」フォルダに保存しました。(元ファイル名: ${originalFileName})`);
     
