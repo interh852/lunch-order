@@ -25,8 +25,13 @@ const CELL_ADDRESSES = {
   GEMINI_MODEL: 'B4',
   GEMINI_PROMPT: 'B5',
   SLACK_BOT_TOKEN: 'B6',
-  SLACK_CHANNEL_ID: 'B7'
+  SLACK_CHANNEL_ID: 'B7',
+  SENDER_NAME: 'B8',
+  COMPANY_NAME: 'B9'
 };
+
+// オーダーカード初期化用のセルアドレス
+const ORDER_CARD_INIT_CELL = 'J3';
 
 // 後方互換性のため個別定数も維持
 const C_MAIL_ADRESS_CELL = CELL_ADDRESSES.C_MAIL_ADRESS;
@@ -35,6 +40,8 @@ const GEMINI_MODEL_CELL = CELL_ADDRESSES.GEMINI_MODEL;
 const GEMINI_PROMPT_CELL = CELL_ADDRESSES.GEMINI_PROMPT;
 const SLACK_BOT_TOKEN_CELL = CELL_ADDRESSES.SLACK_BOT_TOKEN;
 const SLACK_CHANNEL_ID_CELL = CELL_ADDRESSES.SLACK_CHANNEL_ID;
+const SENDER_NAME_CELL = CELL_ADDRESSES.SENDER_NAME;
+const COMPANY_NAME_CELL = CELL_ADDRESSES.COMPANY_NAME;
 
 // ========================================
 // ファイル関連の定数
@@ -55,7 +62,8 @@ const PROPERTY_KEYS = {
   FOLDER_ID_MENU: 'FOLDER_ID_MENU',
   FOLDER_ID_ORDER_CARD: 'FOLDER_ID_ORDER_CARD',
   SPREADSHEET_ID: 'SPREADSHEET_ID',
-  GEMINI_API_KEY: 'GEMINI_API_KEY'
+  GEMINI_API_KEY: 'GEMINI_API_KEY',
+  BENTO_MAIL_ADDRESS: 'BENTO_MAIL_ADDRESS'
 };
 
 // ========================================
@@ -125,6 +133,7 @@ const API_ENDPOINTS = {
 const ORDER_HISTORY_COLUMNS = {
   ORDER_PERSON_NAME: 2,  // C列 - 注文者名
   ORDER_DATE: 3,         // D列 - 対象日付
+  STORE_NAME: 4,         // E列 - 店名
   ORDER_SIZE: 6          // G列 - サイズ
 };
 
@@ -141,6 +150,40 @@ const DATE_FORMATS = {
   YYYY_MM_DD_SLASH: 'yyyy/MM/dd',
   YYYY_MM_DD_HYPHEN: 'yyyy-mm-dd',
   TIMESTAMP: 'yyyy-MM-dd HH:mm:ss'
+};
+
+// ========================================
+// オーダーカードレイアウト
+// ========================================
+const ORDER_CARD_LAYOUT = {
+  FIRST_WEEK_BASE_ROW: 8,    // 1週目の開始行
+  ROWS_PER_WEEK: 4,           // 週ごとの行数（大盛、普通、小盛、空行）
+  COLUMN_OFFSET: 4,           // D列から開始
+  COLUMNS_PER_DAY: 2          // 各曜日ごとの列数
+};
+
+// ========================================
+// サイズカテゴリ
+// ========================================
+const SIZE_CATEGORIES = {
+  LARGE: '大盛',
+  REGULAR: '普通',
+  SMALL: '小盛'
+};
+
+const SIZE_KEYWORDS = {
+  LARGE: ['大', 'L'],
+  SMALL: ['小', 'S']
+};
+
+// ========================================
+// メール関連の定数
+// ========================================
+const EMAIL_TEMPLATES = {
+  SUBJECT_PREFIX: 'のお弁当について',
+  GREETING: '様\n\nいつもお世話になります。',
+  BODY_MAIN: '来週のお弁当のオーダーカードを添付の通り送付させて頂きます。',
+  CLOSING: '以上、よろしくお願いいたします。'
 };
 
 // ========================================
@@ -194,6 +237,32 @@ function validateRequiredSheets(spreadsheetId) {
       error: e.message
     };
   }
+}
+
+/**
+ * サイズ文字列を正規化してカテゴリを返す
+ * @param {string} size - サイズの文字列
+ * @returns {string} 正規化されたサイズカテゴリ（大盛、普通、小盛）
+ */
+function normalizeSizeCategory(size) {
+  if (!size) return SIZE_CATEGORIES.REGULAR;
+  
+  // 大盛の判定
+  for (const keyword of SIZE_KEYWORDS.LARGE) {
+    if (size.includes(keyword)) {
+      return SIZE_CATEGORIES.LARGE;
+    }
+  }
+  
+  // 小盛の判定
+  for (const keyword of SIZE_KEYWORDS.SMALL) {
+    if (size.includes(keyword)) {
+      return SIZE_CATEGORIES.SMALL;
+    }
+  }
+  
+  // デフォルトは普通
+  return SIZE_CATEGORIES.REGULAR;
 }
 
 /**

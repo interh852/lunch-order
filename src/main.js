@@ -18,3 +18,10 @@ function triggerProcessPdfMenus() {
 function triggerNotifyLunchOrdersToSlack() {
   notifyLunchOrdersToSlack();
 }
+
+/**
+ * 次週の注文内容を集計してオーダーカードに転記し、Gmail下書きを作成する機能をトリガーから呼び出すための関数
+ */
+function triggerProcessWeeklyOrders() {
+  processWeeklyOrdersAndCreateDraft();
+}

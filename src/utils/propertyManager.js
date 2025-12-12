@@ -47,6 +47,15 @@ class PropertyManager {
   }
 
   /**
+   * 弁当屋さんのメールアドレスを取得
+   * @returns {string} 弁当屋さんのメールアドレス
+   * @throws {AppError} プロパティが未設定の場合
+   */
+  getBentoMailAddress() {
+    return this._getRequired('BENTO_MAIL_ADDRESS');
+  }
+
+  /**
    * 必須プロパティを取得（未設定の場合はエラー）
    * @private
    * @param {string} key プロパティのキー
