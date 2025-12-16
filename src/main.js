@@ -25,3 +25,11 @@ function triggerNotifyLunchOrdersToSlack() {
 function triggerProcessWeeklyOrders() {
   processWeeklyOrdersAndCreateDraft();
 }
+
+/**
+ * 注文変更を検知してオーダーカードを更新し、通知する機能をトリガーから呼び出すための関数
+ * 毎日17時頃に実行し、オーダー送信後の変更を検知する
+ */
+function triggerDetectOrderChanges() {
+  detectOrderChangesAndNotify();
+}

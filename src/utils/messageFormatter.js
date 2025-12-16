@@ -3,6 +3,44 @@
  */
 
 /**
+ * 注文変更をSlack通知用に整形
+ * @param {Object} changes - { added: [], cancelled: [] }
+ * @param {string} weekType - 'current' or 'next'
+ * @param {string} detectedAt - 検知日時
+ * @returns {string} Slackメッセージ
+ */
+function formatOrderChangesForSlack(changes, weekType, detectedAt) {
+  const emoji = weekType === 'current' ? '🚨' : '🔄';
+  const weekLabel = weekType === 'current' ? '今週分' : '次週分';
+  
+  let message = `${emoji} 【${weekLabel}】注文変更を検知しました（${detectedAt}）\n\n`;
+  
+  // 追加された注文
+  if (changes.added.length > 0) {
+    message += '【追加】\n';
+    changes.added.forEach(change => {
+      const formattedDate = formatJapaneseDateWithDay(change.date);
+      message += `- ${formattedDate} ${change.name} ${change.size}\n`;
+    });
+    message += '\n';
+  }
+  
+  // キャンセルされた注文
+  if (changes.cancelled.length > 0) {
+    message += '【キャンセル】\n';
+    changes.cancelled.forEach(change => {
+      const formattedDate = formatJapaneseDateWithDay(change.date);
+      message += `- ${formattedDate} ${change.name} ${change.size}\n`;
+    });
+    message += '\n';
+  }
+  
+  message += '弁当屋さん宛のメール下書きを作成します。';
+  
+  return message;
+}
+
+/**
  * 取得したランチ注文データをSlackメッセージ用に整形します。
  *
  * @param {Array<Object>} orders 取得した注文データの配列。各オブジェクトは { date: string, name: string, size: string } の形式。

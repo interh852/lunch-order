@@ -36,6 +36,44 @@ function exportSpreadsheetAsExcel(spreadsheet) {
 }
 
 /**
+ * 指定期間のオーダーカードをExcel形式でエクスポート
+ * @param {string} startDate - 開始日 (YYYY/MM/DD形式)
+ * @param {string} endDate - 終了日 (YYYY/MM/DD形式)
+ * @returns {Array<GoogleAppsScript.Base.Blob>|null} Excelファイルのblob配列
+ */
+function exportOrderCardsForPeriod(startDate, endDate) {
+  const logger = getContextLogger('exportOrderCardsForPeriod');
+  
+  try {
+    // 日付を月ごとにグループ化
+    const datesByMonth = groupDateStringsByMonth([startDate, endDate]);
+    
+    // 月ごとにオーダーカードを取得
+    const orderCardFiles = {};
+    Object.keys(datesByMonth).forEach(yearMonth => {
+      const orderCardSpreadsheet = getOrderCardSpreadsheetByYearMonth(yearMonth);
+      if (orderCardSpreadsheet) {
+        orderCardFiles[yearMonth] = orderCardSpreadsheet;
+      } else {
+        logger.warn(`${yearMonth}のオーダーカードが見つかりませんでした。`);
+      }
+    });
+    
+    // Excelエクスポート
+    if (Object.keys(orderCardFiles).length === 0) {
+      logger.error('エクスポート対象のオーダーカードが見つかりませんでした。');
+      return null;
+    }
+    
+    return exportMultipleSpreadsheetsAsExcel(orderCardFiles);
+    
+  } catch (e) {
+    handleError(e, 'exportOrderCardsForPeriod');
+    return null;
+  }
+}
+
+/**
  * 複数のスプレッドシートをExcel形式でエクスポート
  * @param {Object} spreadsheets - スプレッドシートのマップ（キー: 識別子、値: スプレッドシートオブジェクト）
  * @returns {Array<GoogleAppsScript.Base.Blob>} Excelファイルのblob配列

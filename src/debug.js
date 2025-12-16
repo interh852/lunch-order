@@ -277,3 +277,344 @@ function runAllTests() {
   
   return results;
 }
+
+// ========================================
+// スナップショット関連のデバッグ関数
+// ========================================
+
+/**
+ * スナップショットシートの内容を一覧表示（デバッグ用）
+ */
+function debugListSnapshots() {
+  const logger = getContextLogger('debugListSnapshots');
+  logger.info('=== スナップショット一覧 ===');
+  
+  try {
+    const sheet = getOrCreateSnapshotSheet();
+    const lastRow = sheet.getLastRow();
+    
+    if (lastRow <= 1) {
+      logger.info('📭 スナップショットは保存されていません。');
+      return;
+    }
+    
+    const data = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    
+    // 期間キーごとにグループ化
+    const grouped = {};
+    data.forEach(row => {
+      const periodKey = row[0];
+      if (!grouped[periodKey]) {
+        grouped[periodKey] = [];
+      }
+      grouped[periodKey].push({
+        date: formatDateToString(row[1]),
+        name: row[2],
+        size: row[3],
+        savedAt: row[4]
+      });
+    });
+    
+    // 一覧表示
+    Object.keys(grouped).forEach(periodKey => {
+      const orders = grouped[periodKey];
+      logger.info(`\n📅 期間: ${periodKey} (${orders.length}件)`);
+      logger.info(`   保存日時: ${orders[0].savedAt}`);
+      
+      // 日付ごとにグループ化して表示
+      const byDate = {};
+      orders.forEach(order => {
+        if (!byDate[order.date]) {
+          byDate[order.date] = [];
+        }
+        byDate[order.date].push(order);
+      });
+      
+      Object.keys(byDate).sort().forEach(date => {
+        const dateOrders = byDate[date];
+        logger.info(`   ${date}: ${dateOrders.length}件`);
+        dateOrders.forEach(order => {
+          logger.info(`     - ${order.name} (${order.size})`);
+        });
+      });
+    });
+    
+    logger.info('\n=== 一覧完了 ===');
+    
+  } catch (e) {
+    handleError(e, 'debugListSnapshots');
+  }
+}
+
+/**
+ * スナップショットの保存テスト（デバッグ用）
+ */
+function debugSaveSnapshot() {
+  const logger = getContextLogger('debugSaveSnapshot');
+  logger.info('=== スナップショット保存テスト ===');
+  
+  try {
+    // テストデータを作成
+    const testOrders = [
+      { date: '2025/12/16', name: '山田太郎', size: 'M' },
+      { date: '2025/12/16', name: '佐藤花子', size: 'L' },
+      { date: '2025/12/17', name: '山田太郎', size: 'M' },
+      { date: '2025/12/17', name: '鈴木一郎', size: 'S' }
+    ];
+    
+    // 期間キーを生成（年を含む）
+    const periodKey = generatePeriodKey('2025/12/16', '2025/12/17');
+    
+    logger.info(`テストデータ: ${testOrders.length}件`);
+    logger.info(`期間キー: ${periodKey}`);
+    
+    // 保存実行
+    saveOrderSnapshot(periodKey, testOrders);
+    
+    logger.info('✅ 保存完了！');
+    logger.info('debugListSnapshots()で確認してください。');
+    
+  } catch (e) {
+    handleError(e, 'debugSaveSnapshot');
+  }
+}
+
+/**
+ * スナップショットの読み込みテスト（デバッグ用）
+ */
+function debugLoadSnapshot() {
+  const logger = getContextLogger('debugLoadSnapshot');
+  logger.info('=== スナップショット読み込みテスト ===');
+  
+  try {
+    // テスト用の期間キーを生成（年を含む）
+    const periodKey = generatePeriodKey('2025/12/16', '2025/12/17');
+    
+    logger.info(`期間キー: ${periodKey}`);
+    
+    const orders = loadOrderSnapshot(periodKey);
+    
+    if (!orders) {
+      logger.warn('❌ スナップショットが見つかりませんでした。');
+      logger.info('debugListSnapshots()で存在する期間キーを確認してください。');
+      return;
+    }
+    
+    logger.info(`✅ 読み込み成功！ ${orders.length}件`);
+    orders.forEach(order => {
+      logger.info(`  - ${order.date} ${order.name} (${order.size})`);
+    });
+    
+  } catch (e) {
+    handleError(e, 'debugLoadSnapshot');
+  }
+}
+
+// ========================================
+// 日付関連のデバッグ関数
+// ========================================
+
+/**
+ * 今週・次週の平日取得テスト（デバッグ用）
+ */
+function debugGetWeekdays() {
+  const logger = getContextLogger('debugGetWeekdays');
+  logger.info('=== 今週・次週の平日取得テスト ===');
+  
+  try {
+    const today = new Date();
+    logger.info(`基準日: ${today.toLocaleDateString('ja-JP')}`);
+    
+    // 今週の平日
+    const currentWeekdays = getCurrentWeekdays(today);
+    logger.info(`\n📅 今週の平日 (${currentWeekdays.length}日):`);
+    currentWeekdays.forEach(date => {
+      logger.info(`  - ${date} (${formatJapaneseDateWithDay(date)})`);
+    });
+    
+    // 次週の平日
+    const nextWeekdays = getNextWeekdays(today);
+    logger.info(`\n📅 次週の平日 (${nextWeekdays.length}日):`);
+    nextWeekdays.forEach(date => {
+      logger.info(`  - ${date} (${formatJapaneseDateWithDay(date)})`);
+    });
+    
+  } catch (e) {
+    handleError(e, 'debugGetWeekdays');
+  }
+}
+
+// ========================================
+// Gmail検索関連のデバッグ関数
+// ========================================
+
+/**
+ * Gmail検索テスト（デバッグ用）
+ */
+function debugGmailSearch() {
+  const logger = getContextLogger('debugGmailSearch');
+  logger.info('=== Gmail検索テスト ===');
+  
+  try {
+    const today = new Date();
+    
+    // 今週のオーダー送信確認
+    const currentWeekdays = getCurrentWeekdays(today);
+    logger.info(`\n🔍 今週のオーダー送信確認: ${currentWeekdays[0]}〜${currentWeekdays[4]}`);
+    const currentSent = hasOrderEmailBeenSent(currentWeekdays[0], currentWeekdays[4]);
+    logger.info(currentSent ? '✅ 送信済み' : '❌ 未送信');
+    
+    // 次週のオーダー送信確認
+    const nextWeekdays = getNextWeekdays(today);
+    logger.info(`\n🔍 次週のオーダー送信確認: ${nextWeekdays[0]}〜${nextWeekdays[4]}`);
+    const nextSent = hasOrderEmailBeenSent(nextWeekdays[0], nextWeekdays[4]);
+    logger.info(nextSent ? '✅ 送信済み' : '❌ 未送信');
+    
+    logger.info('\n=== テスト完了 ===');
+    
+  } catch (e) {
+    handleError(e, 'debugGmailSearch');
+  }
+}
+
+// ========================================
+// 注文変更検知関連のデバッグ関数
+// ========================================
+
+/**
+ * 差分検知のテスト（デバッグ用）
+ */
+function debugDetectChanges() {
+  const logger = getContextLogger('debugDetectChanges');
+  logger.info('=== 注文変更検知テスト ===');
+  
+  try {
+    const today = new Date();
+    
+    // 次週の変更検知をテスト
+    const nextWeekdays = getNextWeekdays(today);
+    logger.info(`\n📅 対象期間（次週）: ${nextWeekdays[0]}〜${nextWeekdays[4]}`);
+    
+    const result = detectChangesForWeek(nextWeekdays, 'next');
+    
+    if (!result) {
+      logger.info('\n変更なし、または初回実行です。');
+      return;
+    }
+    
+    // 変更内容を表示
+    logger.info('\n🔄 変更検知結果:');
+    
+    if (result.changes.added.length > 0) {
+      logger.info(`\n【追加】 ${result.changes.added.length}件`);
+      result.changes.added.forEach(change => {
+        logger.info(`  + ${change.date} ${change.name} (${change.size})`);
+      });
+    }
+    
+    if (result.changes.cancelled.length > 0) {
+      logger.info(`\n【キャンセル】 ${result.changes.cancelled.length}件`);
+      result.changes.cancelled.forEach(change => {
+        logger.info(`  - ${change.date} ${change.name} (${change.size})`);
+      });
+    }
+    
+    logger.info('\n=== テスト完了 ===');
+    
+  } catch (e) {
+    handleError(e, 'debugDetectChanges');
+  }
+}
+
+/**
+ * 差分比較ロジックの単体テスト（デバッグ用）
+ */
+function debugCompareOrders() {
+  const logger = getContextLogger('debugCompareOrders');
+  logger.info('=== 差分比較ロジックテスト ===');
+  
+  try {
+    // テストデータ: 前回のスナップショット
+    const previousOrders = [
+      { date: '2025/12/16', name: '山田太郎', size: '普通' },
+      { date: '2025/12/16', name: '佐藤花子', size: '大盛' },
+      { date: '2025/12/17', name: '山田太郎', size: '普通' },
+      { date: '2025/12/17', name: '鈴木一郎', size: '小盛' }
+    ];
+    
+    // テストデータ: 現在の注文（変更あり）
+    const currentOrders = [
+      { date: '2025/12/16', name: '山田太郎', size: 'M' },  // 変更なし（正規化後は「普通」）
+      { date: '2025/12/16', name: '田中次郎', size: 'L' },  // 追加
+      { date: '2025/12/17', name: '山田太郎', size: 'M' },  // 変更なし
+      // 佐藤花子と鈴木一郎がキャンセル
+    ];
+    
+    logger.info('\n前回のスナップショット:');
+    previousOrders.forEach(o => logger.info(`  - ${o.date} ${o.name} (${o.size})`));
+    
+    logger.info('\n現在の注文:');
+    currentOrders.forEach(o => logger.info(`  - ${o.date} ${o.name} (${o.size})`));
+    
+    // 差分比較
+    const changes = compareOrderSnapshots(previousOrders, currentOrders);
+    
+    logger.info('\n📊 検知結果:');
+    logger.info(`追加: ${changes.added.length}件`);
+    changes.added.forEach(c => logger.info(`  + ${c.date} ${c.name} (${c.size})`));
+    
+    logger.info(`\nキャンセル: ${changes.cancelled.length}件`);
+    changes.cancelled.forEach(c => logger.info(`  - ${c.date} ${c.name} (${c.size})`));
+    
+    logger.info('\n=== テスト完了 ===');
+    
+  } catch (e) {
+    handleError(e, 'debugCompareOrders');
+  }
+}
+
+/**
+ * 通知機能のテスト（デバッグ用）
+ */
+function debugNotifyChanges() {
+  const logger = getContextLogger('debugNotifyChanges');
+  logger.info('=== 通知機能テスト ===');
+  
+  try {
+    // テスト用の変更データを作成
+    const testChangeResult = {
+      weekType: 'current',
+      period: {
+        start: '2025/12/16',
+        end: '2025/12/20'
+      },
+      changes: {
+        added: [
+          { date: '2025/12/16', name: '新入社員A', size: '普通' },
+          { date: '2025/12/17', name: '新入社員B', size: '大盛' }
+        ],
+        cancelled: [
+          { date: '2025/12/16', name: '退職者X', size: '普通' },
+          { date: '2025/12/17', name: '退職者Y', size: '小盛' }
+        ]
+      }
+    };
+    
+    logger.info('\n📊 テストデータ:');
+    logger.info(`週タイプ: ${testChangeResult.weekType === 'current' ? '今週' : '来週'}`);
+    logger.info(`期間: ${testChangeResult.period.start} - ${testChangeResult.period.end}`);
+    logger.info(`追加: ${testChangeResult.changes.added.length}件`);
+    logger.info(`キャンセル: ${testChangeResult.changes.cancelled.length}件`);
+    
+    // 通知を実行
+    logger.info('\n📤 通知を送信中...');
+    notifyChanges(testChangeResult);
+    
+    logger.info('\n✅ テスト完了！');
+    logger.info('- Slackメッセージを確認してください');
+    logger.info('- Gmailの下書きを確認してください');
+    
+  } catch (e) {
+    handleError(e, 'debugNotifyChanges');
+  }
+}

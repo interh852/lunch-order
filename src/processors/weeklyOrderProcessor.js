@@ -49,6 +49,26 @@ function processWeeklyOrdersAndCreateDraft() {
     
     if (draft) {
       logger.info('Gmail下書きの作成が完了しました。');
+      
+      // 5. スナップショットを保存（下書き作成成功時のみ）
+      try {
+        const periodKey = generatePeriodKey(result.period.start, result.period.end);
+        logger.info(`スナップショットを保存します: ${periodKey}`);
+        
+        // 次週の注文データを再取得
+        const nextWeekdays = getNextWeekdays(new Date());
+        const orders = getLunchOrdersForNextWeek(nextWeekdays);
+        
+        if (orders.length > 0) {
+          saveOrderSnapshot(periodKey, orders);
+          logger.info('✅ スナップショットの保存が完了しました。');
+        } else {
+          logger.warn('注文データがないため、スナップショットは保存しませんでした。');
+        }
+      } catch (snapshotError) {
+        // スナップショット保存に失敗しても、メール下書き作成は成功しているので警告のみ
+        logger.error(`スナップショットの保存に失敗しました: ${snapshotError.message}`);
+      }
     } else {
       logger.error('Gmail下書きの作成に失敗しました。');
     }
