@@ -98,6 +98,22 @@ function testGeminiConnection() {
 }
 
 /**
+ * 次週の注文募集アナウンスのテスト
+ * 実際にSlackに投稿して動作確認を行います
+ */
+function testOrderAnnouncement() {
+  const logger = getContextLogger('testOrderAnnouncement');
+  logger.info('=== 注文募集アナウンステスト開始 ===');
+  
+  try {
+    announceNextWeekOrderToSlack();
+    logger.info('=== テスト完了 ===');
+  } catch (e) {
+    handleError(e, 'testOrderAnnouncement');
+  }
+}
+
+/**
  * Slack通知機能のテスト
  * テストメッセージをSlackに送信します
  */
