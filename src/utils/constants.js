@@ -8,13 +8,15 @@
 const SHEET_NAMES = {
   PROMPT: '情報',
   MENU: 'メニュー',
-  ORDER_HISTORY: '注文履歴'
+  ORDER_HISTORY: '注文履歴',
+  SNAPSHOT: '注文スナップショット'
 };
 
 // 後方互換性のため個別定数も維持
 const PROMPT_SHEET_NAME = SHEET_NAMES.PROMPT;
 const MENU_SHEET_NAME = SHEET_NAMES.MENU;
 const ORDER_HISTORY_SHEET_NAME = SHEET_NAMES.ORDER_HISTORY;
+const SNAPSHOT_SHEET_NAME = SHEET_NAMES.SNAPSHOT;
 
 // ========================================
 // セル関連の定数
@@ -42,6 +44,18 @@ const SLACK_BOT_TOKEN_CELL = CELL_ADDRESSES.SLACK_BOT_TOKEN;
 const SLACK_CHANNEL_ID_CELL = CELL_ADDRESSES.SLACK_CHANNEL_ID;
 const SENDER_NAME_CELL = CELL_ADDRESSES.SENDER_NAME;
 const COMPANY_NAME_CELL = CELL_ADDRESSES.COMPANY_NAME;
+
+// ========================================
+// シート行/列の定数
+// ========================================
+const SHEET_ROWS = {
+  HEADER_ROW: 1,           // ヘッダー行
+  DATA_START_ROW: 2        // データ開始行
+};
+
+// 後方互換性のため個別定数も維持
+const SHEET_HEADER_ROW = SHEET_ROWS.HEADER_ROW;
+const SHEET_DATA_START_ROW = SHEET_ROWS.DATA_START_ROW;
 
 // ========================================
 // ファイル関連の定数
@@ -143,6 +157,14 @@ const MENU_COLUMNS = {
   MENU: 2         // C列 - 弁当名
 };
 
+const SNAPSHOT_COLUMNS = {
+  PERIOD_KEY: 0,    // A列 - 期間キー (例: 2025.12.16-12.20)
+  ORDER_DATE: 1,    // B列 - 日付 (YYYY/MM/DD)
+  ORDER_NAME: 2,    // C列 - 注文者
+  ORDER_SIZE: 3,    // D列 - サイズ
+  SAVED_AT: 4       // E列 - 保存日時
+};
+
 // ========================================
 // 日付フォーマット
 // ========================================
@@ -174,6 +196,14 @@ const SIZE_CATEGORIES = {
 const SIZE_KEYWORDS = {
   LARGE: ['大', 'L'],
   SMALL: ['小', 'S']
+};
+
+// ========================================
+// Gmail検索関連の定数
+// ========================================
+const GMAIL_SEARCH = {
+  SUBJECT_KEYWORDS: ['弁当', 'お弁当'],
+  SEARCH_DAYS_BACK: 14  // 過去14日分を検索
 };
 
 // ========================================

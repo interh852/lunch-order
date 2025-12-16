@@ -2,6 +2,10 @@
  * Gmail下書き作成機能
  */
 
+// ==========================================
+// メイン関数（公開API）
+// ==========================================
+
 /**
  * 注文メールの下書きを作成
  * @param {string} recipientEmail - 宛先メールアドレス
@@ -48,6 +52,58 @@ function createOrderEmailDraft(recipientEmail, period, changes, attachments) {
     return null;
   }
 }
+
+/**
+ * 注文変更用のメール下書きを作成
+ * @param {string} recipientEmail - 宛先メールアドレス
+ * @param {Object} period - 期間情報 {start: string, end: string}
+ * @param {Object} changes - 変更情報 {added: [], cancelled: []}
+ * @param {Array<GoogleAppsScript.Base.Blob>} attachments - 添付ファイル（Excelのblob配列）
+ * @param {string} weekType - 'current' or 'next'
+ * @returns {GoogleAppsScript.Gmail.GmailDraft|null} 作成された下書き
+ */
+function createOrderChangeEmailDraft(recipientEmail, period, changes, attachments, weekType) {
+  const logger = getContextLogger('createOrderChangeEmailDraft');
+  
+  try {
+    // 件名を生成（【変更】を追加）
+    const subject = generateChangeEmailSubject(period);
+    
+    // 本文を生成
+    const body = generateChangeEmailBody(recipientEmail, changes, period, weekType);
+    
+    // 送信者名を取得
+    const senderName = getSenderNameFromPromptSheet() || extractNameFromEmail(Session.getActiveUser().getEmail());
+    
+    logger.info(`変更通知メール下書き作成: 宛先=${recipientEmail}, 件名=${subject}`);
+    logger.debug(`添付ファイル数: ${attachments ? attachments.length : 0}`);
+    
+    // 下書きを作成
+    const draftOptions = {
+      attachments: attachments || [],
+      name: senderName
+    };
+    
+    const draft = GmailApp.createDraft(
+      recipientEmail,
+      subject,
+      body,
+      draftOptions
+    );
+    
+    logger.info('変更通知メール下書きを作成しました。');
+    
+    return draft;
+    
+  } catch (e) {
+    handleError(e, 'createOrderChangeEmailDraft');
+    return null;
+  }
+}
+
+// ==========================================
+// ヘルパー関数（内部実装）
+// ==========================================
 
 /**
  * メールの件名を生成
@@ -113,13 +169,19 @@ function extractNameFromEmail(email) {
 }
 
 /**
- * 次週の注文データから店名を取得
+ * 指定された日付リストの注文データから店名を取得
+ * @param {Array<string>} dateStrings - 日付文字列の配列 (YYYY/MM/DD形式)
  * @returns {string} 店名（取得できない場合は空文字列）
  */
-function getStoreNameFromNextWeekOrders() {
-  const logger = getContextLogger('getStoreNameFromNextWeekOrders');
+function getStoreNameFromOrders(dateStrings) {
+  const logger = getContextLogger('getStoreNameFromOrders');
   
   try {
+    if (!dateStrings || dateStrings.length === 0) {
+      logger.warn('日付リストが空です。');
+      return '';
+    }
+    
     const propertyManager = getPropertyManager();
     const spreadsheetId = propertyManager.getSpreadsheetId();
     const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
@@ -130,48 +192,61 @@ function getStoreNameFromNextWeekOrders() {
       return '';
     }
     
-    // 次週の平日を取得
-    const nextWeekdays = getNextWeekdays(new Date());
-    
-    if (nextWeekdays.length === 0) {
-      logger.warn('次週の平日が取得できませんでした。');
-      return '';
-    }
-    
     // 2行目以降のデータを取得（ヘッダーを除く）
     const lastRow = sheet.getLastRow();
-    if (lastRow < 2) {
+    if (lastRow < SHEET_DATA_START_ROW) {
       logger.warn('注文履歴が空です。');
       return '';
     }
     
-    const dataRange = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn());
+    const dataRange = sheet.getRange(SHEET_DATA_START_ROW, 1, lastRow - SHEET_HEADER_ROW, sheet.getLastColumn());
     const values = dataRange.getValues();
     
-    // 次週の注文データから店名を検索
-    for (const targetDateStr of nextWeekdays) {
-      for (const row of values) {
-        const orderDate = row[ORDER_HISTORY_COLUMNS.ORDER_DATE];
-        if (orderDate instanceof Date) {
-          const orderDateStr = Utilities.formatDate(orderDate, Session.getScriptTimeZone(), DATE_FORMATS.YYYY_MM_DD_SLASH);
-          if (orderDateStr === targetDateStr) {
-            const storeName = row[ORDER_HISTORY_COLUMNS.STORE_NAME];
-            if (storeName) {
-              logger.debug(`店名を取得しました: ${storeName}`);
-              return storeName;
-            }
+    // 日付リストをSetに変換（高速検索用）
+    const dateSet = new Set(dateStrings);
+    
+    // 指定日付の注文データから店名を検索
+    for (const row of values) {
+      const orderDate = row[ORDER_HISTORY_COLUMNS.ORDER_DATE];
+      if (orderDate instanceof Date) {
+        const orderDateStr = Utilities.formatDate(orderDate, Session.getScriptTimeZone(), DATE_FORMATS.YYYY_MM_DD_SLASH);
+        if (dateSet.has(orderDateStr)) {
+          const storeName = row[ORDER_HISTORY_COLUMNS.STORE_NAME];
+          if (storeName) {
+            logger.debug(`店名を取得しました: ${storeName} (${orderDateStr})`);
+            return storeName;
           }
         }
       }
     }
     
-    logger.warn('次週の注文データに店名が見つかりませんでした。');
+    logger.warn(`指定日付の注文データに店名が見つかりませんでした。`);
     return '';
     
   } catch (e) {
-    handleError(e, 'getStoreNameFromNextWeekOrders');
+    handleError(e, 'getStoreNameFromOrders');
     return '';
   }
+}
+
+/**
+ * 次週の注文データから店名を取得
+ * @returns {string} 店名（取得できない場合は空文字列）
+ */
+function getStoreNameFromNextWeekOrders() {
+  const nextWeekdays = getNextWeekdays(new Date());
+  return getStoreNameFromOrders(nextWeekdays);
+}
+
+/**
+ * 指定期間の注文データから店名を取得
+ * @param {Object} period - 期間情報 {start: string, end: string}
+ * @returns {string} 店名（取得できない場合は空文字列）
+ */
+function getStoreNameFromPeriod(period) {
+  // 期間の開始日と終了日を含む配列を作成
+  const dateStrings = [period.start, period.end];
+  return getStoreNameFromOrders(dateStrings);
 }
 
 /**
@@ -196,7 +271,7 @@ function getSenderNameFromPromptSheet() {
     const senderName = sheet.getRange(SENDER_NAME_CELL).getValue();
     
     if (!senderName) {
-      logger.warn('B8セルに送信者名が設定されていません。');
+      logger.warn(`${SENDER_NAME_CELL}セルに送信者名が設定されていません。`);
       return '';
     }
     
@@ -259,6 +334,138 @@ function isAllPreviousValuesZero(changes) {
   });
   
   return !hasNonZeroPrevious;
+}
+
+/**
+ * 変更通知メールの件名を生成
+ * @param {Object} period - 期間情報 {start: string, end: string}
+ * @returns {string} 件名
+ */
+function generateChangeEmailSubject(period) {
+  const startDate = new Date(period.start);
+  const endDate = new Date(period.end);
+  
+  const startMonth = startDate.getMonth() + 1;
+  const startDay = startDate.getDate();
+  const endMonth = endDate.getMonth() + 1;
+  const endDay = endDate.getDate();
+  
+  // 例: 【変更】12/16~12/20のお弁当について
+  return `【変更】${startMonth}/${String(startDay).padStart(2, '0')}~${endMonth}/${String(endDay).padStart(2, '0')}${EMAIL_TEMPLATES.SUBJECT_PREFIX}`;
+}
+
+/**
+ * 変更通知メールの本文を生成
+ * @param {string} recipientEmail - 宛先メールアドレス
+ * @param {Object} changes - 変更情報 {added: [], cancelled: []}
+ * @param {Object} period - 期間情報
+ * @param {string} weekType - 'current' or 'next'
+ * @returns {string} メール本文
+ */
+function generateChangeEmailBody(recipientEmail, changes, period, weekType) {
+  const lines = [];
+  
+  // 宛名（期間の注文データから店名を取得）
+  const storeName = getStoreNameFromPeriod(period) || extractNameFromEmail(recipientEmail);
+  lines.push(`${storeName}${EMAIL_TEMPLATES.GREETING}`);
+  
+  // 送信者名
+  const senderName = getSenderNameFromPromptSheet() || extractNameFromEmail(Session.getActiveUser().getEmail());
+  lines.push(`${senderName}です。`);
+  lines.push('');
+  
+  // 本文
+  const weekLabel = weekType === 'current' ? '今週' : '来週';
+  lines.push(`${weekLabel}のお弁当注文について、変更がありましたのでご連絡いたします。`);
+  lines.push('');
+  
+  // 変更内容を整形
+  const changeText = formatChangesForEmail(changes);
+  if (changeText) {
+    lines.push('【変更内容】');
+    lines.push(changeText);
+    lines.push('');
+  }
+  
+  lines.push('更新後のオーダーカードを添付いたしますので、');
+  lines.push('ご確認の程よろしくお願いいたします。');
+  lines.push('');
+  lines.push(EMAIL_TEMPLATES.CLOSING);
+  
+  return lines.join('\n');
+}
+
+/**
+ * 変更内容をメール本文用に整形
+ * 日付とサイズごとに「変更前→変更後」の形式で表示
+ * @param {Object} changes - { added: [], cancelled: [], quantityChanges: [] }
+ * @returns {string} 整形された変更内容
+ */
+function formatChangesForEmail(changes) {
+  const lines = [];
+  
+  // quantityChangesが存在すればそれを使用
+  if (changes.quantityChanges && changes.quantityChanges.length > 0) {
+    // 日付順にソート
+    const sorted = changes.quantityChanges.sort((a, b) => {
+      return a.date.localeCompare(b.date);
+    });
+    
+    sorted.forEach(item => {
+      const formattedDate = formatJapaneseDateWithDay(item.date);
+      lines.push(`${formattedDate} ${item.size} ${item.before}個 → ${item.after}個`);
+    });
+  } else {
+    // quantityChangesがない場合は従来の形式（後方互換性のため）
+    const summary = {};
+    
+    // キャンセルをカウント
+    if (changes.cancelled && changes.cancelled.length > 0) {
+      changes.cancelled.forEach(change => {
+        const key = `${change.date}_${change.size}`;
+        if (!summary[key]) {
+          summary[key] = { date: change.date, size: change.size, added: 0, cancelled: 0 };
+        }
+        summary[key].cancelled += 1;
+      });
+    }
+    
+    // 追加をカウント
+    if (changes.added && changes.added.length > 0) {
+      changes.added.forEach(change => {
+        const key = `${change.date}_${change.size}`;
+        if (!summary[key]) {
+          summary[key] = { date: change.date, size: change.size, added: 0, cancelled: 0 };
+        }
+        summary[key].added += 1;
+      });
+    }
+    
+    // 日付順にソート
+    const sortedKeys = Object.keys(summary).sort((a, b) => {
+      const dateA = summary[a].date;
+      const dateB = summary[b].date;
+      return dateA.localeCompare(dateB);
+    });
+    
+    // フォーマットして出力
+    sortedKeys.forEach(key => {
+      const item = summary[key];
+      const formattedDate = formatJapaneseDateWithDay(item.date);
+      
+      const parts = [];
+      if (item.added > 0) {
+        parts.push(`追加${item.added}件`);
+      }
+      if (item.cancelled > 0) {
+        parts.push(`キャンセル${item.cancelled}件`);
+      }
+      
+      lines.push(`${formattedDate} ${item.size} ${parts.join('、')}`);
+    });
+  }
+  
+  return lines.join('\n');
 }
 
 /**
