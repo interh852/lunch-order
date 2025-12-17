@@ -3,6 +3,50 @@
  */
 
 /**
+ * 次週の注文募集アナウンスをSlackに投稿する
+ */
+function announceNextWeekOrderToSlack() {
+  const logger = getContextLogger('announceNextWeekOrderToSlack');
+  logger.info('次週の注文募集アナウンスを開始します。');
+  
+  try {
+    // 1. 設定からアプリURLを取得
+    const config = getConfig();
+    if (!config) {
+      logger.error('設定の取得に失敗しました。');
+      return;
+    }
+    
+    const orderAppUrl = config.orderAppUrl;
+    if (!orderAppUrl) {
+      logger.error('注文アプリのURLが設定されていません。スプレッドシート「情報」シートのB10セルを確認してください。');
+      return;
+    }
+    
+    logger.info(`注文アプリURL: ${orderAppUrl}`);
+    
+    // 2. メッセージを整形
+    const message = formatOrderAnnouncementForSlack(orderAppUrl);
+    if (!message) {
+      logger.error('Slackメッセージの整形に失敗しました。');
+      return;
+    }
+    logger.debug('整形されたSlackメッセージ:\n' + message);
+    
+    // 3. Slackに投稿
+    const result = sendToSlack(message);
+    
+    if (Result.isSuccess(result)) {
+      logger.info('✅ 注文募集アナウンスをSlackに投稿しました。');
+    } else {
+      logger.error(`❌ Slack投稿に失敗しました: ${Result.getError(result)}`);
+    }
+  } catch (e) {
+    handleError(e, 'announceNextWeekOrderToSlack');
+  }
+}
+
+/**
  * 次週のランチ注文状況をSlackに通知するメイン処理関数
  */
 function notifyLunchOrdersToSlack() {

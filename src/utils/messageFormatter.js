@@ -3,6 +3,15 @@
  */
 
 /**
+ * 次週の注文募集アナウンスをSlack通知用に整形
+ * @param {string} orderAppUrl - 注文アプリのURL
+ * @returns {string} Slackメッセージ
+ */
+function formatOrderAnnouncementForSlack(orderAppUrl) {
+  return `<!channel> 来週のお弁当の注文を受け付けます\nアプリに記入をお願いします\n${orderAppUrl}`;
+}
+
+/**
  * 注文変更をSlack通知用に整形
  * @param {Object} changes - { added: [], cancelled: [] }
  * @param {string} weekType - 'current' or 'next'

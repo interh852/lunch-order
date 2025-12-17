@@ -66,6 +66,7 @@ function _loadAndBuildFullConfig() {
     const gmailQuery = sheet.getRange(GMAIL_QUERY_CELL).getValue();
     const botToken = sheet.getRange(SLACK_BOT_TOKEN_CELL).getValue();
     const channelId = sheet.getRange(SLACK_CHANNEL_ID_CELL).getValue();
+    const orderAppUrl = sheet.getRange(ORDER_APP_URL_CELL).getValue();
 
     // 必須項目のチェック
     if (!geminiPrompt || !gmailQuery || !botToken || !channelId) {
@@ -78,6 +79,7 @@ function _loadAndBuildFullConfig() {
       prompt: geminiPrompt,
       modelName: modelName,
       gmailQuery: gmailQuery,
+      orderAppUrl: orderAppUrl,
       slack: {
         botToken: botToken,
         channelId: channelId
