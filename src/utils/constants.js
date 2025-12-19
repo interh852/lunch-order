@@ -78,8 +78,7 @@ const PROPERTY_KEYS = {
   FOLDER_ID_MENU: 'FOLDER_ID_MENU',
   FOLDER_ID_ORDER_CARD: 'FOLDER_ID_ORDER_CARD',
   SPREADSHEET_ID: 'SPREADSHEET_ID',
-  GEMINI_API_KEY: 'GEMINI_API_KEY',
-  BENTO_MAIL_ADDRESS: 'BENTO_MAIL_ADDRESS'
+  GEMINI_API_KEY: 'GEMINI_API_KEY'
 };
 
 // ========================================
@@ -150,7 +149,8 @@ const ORDER_HISTORY_COLUMNS = {
   ORDER_PERSON_NAME: 2,  // C列 - 注文者名
   ORDER_DATE: 3,         // D列 - 対象日付
   STORE_NAME: 4,         // E列 - 店名
-  ORDER_SIZE: 6          // G列 - サイズ
+  ORDER_SIZE: 6,         // G列 - サイズ
+  ORDER_COUNT: 7         // H列 - 個数
 };
 
 const MENU_COLUMNS = {
@@ -164,7 +164,8 @@ const SNAPSHOT_COLUMNS = {
   ORDER_DATE: 1,    // B列 - 日付 (YYYY/MM/DD)
   ORDER_NAME: 2,    // C列 - 注文者
   ORDER_SIZE: 3,    // D列 - サイズ
-  SAVED_AT: 4       // E列 - 保存日時
+  ORDER_COUNT: 4,   // E列 - 個数
+  SAVED_AT: 5       // F列 - 保存日時
 };
 
 // ========================================

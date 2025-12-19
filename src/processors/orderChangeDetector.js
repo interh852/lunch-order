@@ -143,9 +143,10 @@ function compareOrderSnapshots(previousOrders, currentOrders) {
       const normalizedOrder = {
         date: order.date,
         name: order.name,
-        size: normalizeSizeCategory(order.size)
+        size: normalizeSizeCategory(order.size),
+        count: order.count || 1
       };
-      const key = generateOrderKey(normalizedOrder);
+      const key = generateOrderKeyWithCount(normalizedOrder);
       previousMap.set(key, normalizedOrder);
     });
     
@@ -156,9 +157,10 @@ function compareOrderSnapshots(previousOrders, currentOrders) {
       const normalizedOrder = {
         date: order.date,
         name: order.name,
-        size: normalizeSizeCategory(order.size)
+        size: normalizeSizeCategory(order.size),
+        count: order.count || 1
       };
-      const key = generateOrderKey(normalizedOrder);
+      const key = generateOrderKeyWithCount(normalizedOrder);
       currentMap.set(key, normalizedOrder);
     });
     
@@ -170,6 +172,7 @@ function compareOrderSnapshots(previousOrders, currentOrders) {
           date: order.date,
           name: order.name,
           size: order.size,
+          count: order.count,
           changeType: 'added'
         });
       }
@@ -183,6 +186,7 @@ function compareOrderSnapshots(previousOrders, currentOrders) {
           date: order.date,
           name: order.name,
           size: order.size,
+          count: order.count,
           changeType: 'cancelled'
         });
       }
@@ -198,7 +202,7 @@ function compareOrderSnapshots(previousOrders, currentOrders) {
       if (!quantityChanges[key]) {
         quantityChanges[key] = { date: order.date, size: normalizedSize, before: 0, after: 0 };
       }
-      quantityChanges[key].before += 1;
+      quantityChanges[key].before += (order.count || 1);
     });
     
     // 変更後の数量を集計
@@ -208,7 +212,7 @@ function compareOrderSnapshots(previousOrders, currentOrders) {
       if (!quantityChanges[key]) {
         quantityChanges[key] = { date: order.date, size: normalizedSize, before: 0, after: 0 };
       }
-      quantityChanges[key].after += 1;
+      quantityChanges[key].after += (order.count || 1);
     });
     
     // 変更があったものだけをフィルタ
@@ -222,6 +226,16 @@ function compareOrderSnapshots(previousOrders, currentOrders) {
     handleError(e, 'compareOrderSnapshots');
     return { added: [], cancelled: [], quantityChanges: [] };
   }
+}
+
+/**
+ * 注文の一意キーを生成（個数を含む）
+ * 日付_注文者_サイズ_個数の組み合わせで一意に識別する
+ * @param {Object} order - 注文オブジェクト {date, name, size, count}
+ * @returns {string} 一意キー (例: "2025/12/16_山田太郎_普通_1")
+ */
+function generateOrderKeyWithCount(order) {
+  return `${order.date}_${order.name}_${order.size}_${order.count || 1}`;
 }
 
 /**
@@ -324,8 +338,12 @@ function createEmailDraftForChanges(changeResult) {
   const logger = getContextLogger('createEmailDraftForChanges');
   
   try {
-    const propertyManager = getPropertyManager();
-    const bentoMailAddress = propertyManager.getBentoMailAddress();
+    const config = getConfig();
+    if (!config) {
+      logger.error('設定の取得に失敗しました。');
+      return;
+    }
+    const bentoMailAddress = config.bentoMailAddress;
     
     if (!bentoMailAddress) {
       logger.error('BENTO_MAIL_ADDRESSが設定されていません。メール下書きの作成をスキップします。');
