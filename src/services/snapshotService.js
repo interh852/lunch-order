@@ -22,7 +22,7 @@ function getOrCreateSnapshotSheet() {
       sheet = spreadsheet.insertSheet(SNAPSHOT_SHEET_NAME);
       
       // ヘッダー行を設定
-      const headers = ['期間キー', '日付', '注文者', 'サイズ', '保存日時'];
+      const headers = ['期間キー', '日付', '注文者', 'サイズ', '個数', '保存日時'];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
       
       // ヘッダー行の書式設定
@@ -35,7 +35,8 @@ function getOrCreateSnapshotSheet() {
       sheet.setColumnWidth(2, 100); // 日付
       sheet.setColumnWidth(3, 120); // 注文者
       sheet.setColumnWidth(4, 80);  // サイズ
-      sheet.setColumnWidth(5, 150); // 保存日時
+      sheet.setColumnWidth(5, 60);  // 個数
+      sheet.setColumnWidth(6, 150); // 保存日時
       
       // シートを固定
       sheet.setFrozenRows(1);
@@ -75,7 +76,7 @@ function generatePeriodKey(startDate, endDate) {
 /**
  * 注文スナップショットを保存（同期間の既存データは自動削除）
  * @param {string} periodKey - 期間キー（例: "12.16-12.20"）
- * @param {Array<Object>} orders - 注文データ配列 [{date, name, size}, ...]
+ * @param {Array<Object>} orders - 注文データ配列 [{date, name, size, count}, ...]
  */
 function saveOrderSnapshot(periodKey, orders) {
   const logger = getContextLogger('saveOrderSnapshot');
@@ -100,12 +101,14 @@ function saveOrderSnapshot(periodKey, orders) {
     orders.forEach(order => {
       // サイズを正規化して保存
       const normalizedSize = normalizeSizeCategory(order.size);
+      const count = order.count || 1;
       
       rowsToAdd.push([
         periodKey,
         order.date,
         order.name,
         normalizedSize,
+        count,
         now
       ]);
     });
@@ -113,7 +116,7 @@ function saveOrderSnapshot(periodKey, orders) {
     if (rowsToAdd.length > 0) {
       // 最終行の次に追加
       const lastRow = sheet.getLastRow();
-      sheet.getRange(lastRow + 1, 1, rowsToAdd.length, 5).setValues(rowsToAdd);
+      sheet.getRange(lastRow + 1, 1, rowsToAdd.length, 6).setValues(rowsToAdd);
       logger.info(`スナップショット ${rowsToAdd.length}件を保存しました。`);
     }
     
@@ -141,7 +144,7 @@ function loadOrderSnapshot(periodKey) {
     }
     
     // 全データを取得（ヘッダー除く）
-    const data = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    const data = sheet.getRange(2, 1, lastRow - 1, 6).getValues();
     
     // 指定された期間キーのデータをフィルタリング
     const orders = [];
@@ -150,7 +153,8 @@ function loadOrderSnapshot(periodKey) {
         orders.push({
           date: formatDateToString(row[SNAPSHOT_COLUMNS.ORDER_DATE]),
           name: row[SNAPSHOT_COLUMNS.ORDER_NAME],
-          size: row[SNAPSHOT_COLUMNS.ORDER_SIZE]
+          size: row[SNAPSHOT_COLUMNS.ORDER_SIZE],
+          count: row[SNAPSHOT_COLUMNS.ORDER_COUNT] || 1
         });
       }
     });

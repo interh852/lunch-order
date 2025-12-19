@@ -23,8 +23,12 @@ function processWeeklyOrdersAndCreateDraft() {
     logger.info('スプレッドシートへの書き込みを完了しました。');
     
     // 2. 弁当屋さんのメールアドレスを取得
-    const propertyManager = getPropertyManager();
-    const bentoMailAddress = propertyManager.getBentoMailAddress();
+    const config = getConfig();
+    if (!config) {
+      logger.error('設定の取得に失敗しました。');
+      return;
+    }
+    const bentoMailAddress = config.bentoMailAddress;
     
     if (!bentoMailAddress) {
       logger.error('BENTO_MAIL_ADDRESSが設定されていません。メール下書きの作成をスキップします。');
@@ -208,7 +212,7 @@ function getOrderCardSpreadsheetByYearMonth(yearMonth) {
 
 /**
  * 注文を日付×サイズで集計
- * @param {Array} orders - 注文データの配列 (各要素: {date, name, size})
+ * @param {Array} orders - 注文データの配列 (各要素: {date, name, size, count})
  * @returns {Object} 日付とサイズをキーとした集計結果
  */
 function aggregateOrdersByDateAndSize(orders) {
@@ -217,6 +221,7 @@ function aggregateOrdersByDateAndSize(orders) {
   orders.forEach(order => {
     const dateKey = order.date; // YYYY/MM/DD形式
     const sizeCategory = normalizeSizeCategory(order.size);
+    const count = order.count || 1;
     
     if (!aggregated[dateKey]) {
       aggregated[dateKey] = {
@@ -226,8 +231,8 @@ function aggregateOrdersByDateAndSize(orders) {
       };
     }
     
-    // サイズカテゴリに応じてカウント
-    aggregated[dateKey][sizeCategory]++;
+    // サイズカテゴリに応じて個数を加算
+    aggregated[dateKey][sizeCategory] += count;
   });
   
   return aggregated;

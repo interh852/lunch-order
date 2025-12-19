@@ -44,11 +44,16 @@ function getLunchOrdersForNextWeek(nextWeekdays) {
           if (orderDateStr === targetDateStr) {
             const name = row[ORDER_HISTORY_COLUMNS.ORDER_PERSON_NAME];
             const size = row[ORDER_HISTORY_COLUMNS.ORDER_SIZE];
+            // 個数を取得（数値に変換、空や不正な値の場合は1をデフォルトにする）
+            const countValue = row[ORDER_HISTORY_COLUMNS.ORDER_COUNT];
+            const count = (countValue && !isNaN(countValue)) ? Number(countValue) : 1;
+            
             if (name && size) { // 注文者名とサイズが空でないことを確認
               orders.push({
                 date: orderDateStr,
                 name: name,
-                size: size
+                size: size,
+                count: count
               });
             }
           }

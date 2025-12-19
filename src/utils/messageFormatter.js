@@ -29,7 +29,8 @@ function formatOrderChangesForSlack(changes, weekType, detectedAt) {
     message += '【追加】\n';
     changes.added.forEach(change => {
       const formattedDate = formatJapaneseDateWithDay(change.date);
-      message += `- ${formattedDate} ${change.name} ${change.size}\n`;
+      const countLabel = change.count > 1 ? ` (${change.count}個)` : '';
+      message += `- ${formattedDate} ${change.name} ${change.size}${countLabel}\n`;
     });
     message += '\n';
   }
@@ -39,7 +40,8 @@ function formatOrderChangesForSlack(changes, weekType, detectedAt) {
     message += '【キャンセル】\n';
     changes.cancelled.forEach(change => {
       const formattedDate = formatJapaneseDateWithDay(change.date);
-      message += `- ${formattedDate} ${change.name} ${change.size}\n`;
+      const countLabel = change.count > 1 ? ` (${change.count}個)` : '';
+      message += `- ${formattedDate} ${change.name} ${change.size}${countLabel}\n`;
     });
     message += '\n';
   }
@@ -52,7 +54,7 @@ function formatOrderChangesForSlack(changes, weekType, detectedAt) {
 /**
  * 取得したランチ注文データをSlackメッセージ用に整形します。
  *
- * @param {Array<Object>} orders 取得した注文データの配列。各オブジェクトは { date: string, name: string, size: string } の形式。
+ * @param {Array<Object>} orders 取得した注文データの配列。各オブジェクトは { date: string, name: string, size: string, count: number } の形式。
  * @returns {string} 整形されたSlackメッセージ文字列。
  */
 function formatLunchOrdersForSlack(orders) {
@@ -66,7 +68,7 @@ function formatLunchOrdersForSlack(orders) {
     if (!acc[date]) {
       acc[date] = [];
     }
-    acc[date].push({ name: order.name, size: order.size });
+    acc[date].push({ name: order.name, size: order.size, count: order.count });
     return acc;
   }, {});
 
@@ -77,7 +79,10 @@ function formatLunchOrdersForSlack(orders) {
     const formattedDate = formatJapaneseDateWithDay(dateStr); // MM/DD (曜日) 形式に変換
     const dailyOrders = groupedOrders[dateStr];
 
-    const orderDetails = dailyOrders.map(order => `${order.name} ${order.size}`).join(', ');
+    const orderDetails = dailyOrders.map(order => {
+      const countLabel = order.count > 1 ? ` (${order.count}個)` : '';
+      return `${order.name} ${order.size}${countLabel}`;
+    }).join(', ');
     message += `- ${formattedDate}: ${orderDetails}\n`;
   });
 
