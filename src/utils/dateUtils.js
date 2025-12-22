@@ -43,7 +43,7 @@ function getNextWeekdays(baseDate) {
 
 /**
  * 指定された日付から今週の月曜日から金曜日までの日付をYYYY/MM/DD形式の文字列で取得します。
- * 
+ *
  * @param {Date} baseDate 基準となる日付オブジェクト。
  * @returns {string[]} 今週の月曜日から金曜日までの日付文字列の配列 (例: ['2025/12/16', '2025/12/17', ..., '2025/12/20'])。
  */
@@ -59,7 +59,7 @@ function getCurrentWeekdays(baseDate) {
 
   // 今週の月曜日を計算
   let currentMonday = new Date(current.getTime());
-  const daysFromMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1); // 日曜日の場合は前週の月曜日
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 日曜日の場合は前週の月曜日
   currentMonday.setDate(current.getDate() - daysFromMonday);
 
   // YYYY/MM/DD形式の関数

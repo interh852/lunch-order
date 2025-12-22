@@ -9,26 +9,25 @@
  */
 function exportSpreadsheetAsExcel(spreadsheet) {
   const logger = getContextLogger('exportSpreadsheetAsExcel');
-  
+
   try {
     const spreadsheetId = spreadsheet.getId();
     const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=xlsx`;
-    
+
     const token = ScriptApp.getOAuthToken();
     const response = UrlFetchApp.fetch(url, {
       headers: {
-        'Authorization': 'Bearer ' + token
-      }
+        Authorization: 'Bearer ' + token,
+      },
     });
-    
+
     const blob = response.getBlob();
     const fileName = spreadsheet.getName() + '.xlsx';
     blob.setName(fileName);
-    
+
     logger.info(`スプレッドシート「${spreadsheet.getName()}」をExcel形式でエクスポートしました。`);
-    
+
     return blob;
-    
   } catch (e) {
     handleError(e, 'exportSpreadsheetAsExcel');
     return null;
@@ -43,14 +42,14 @@ function exportSpreadsheetAsExcel(spreadsheet) {
  */
 function exportOrderCardsForPeriod(startDate, endDate) {
   const logger = getContextLogger('exportOrderCardsForPeriod');
-  
+
   try {
     // 日付を月ごとにグループ化
     const datesByMonth = groupDateStringsByMonth([startDate, endDate]);
-    
+
     // 月ごとにオーダーカードを取得
     const orderCardFiles = {};
-    Object.keys(datesByMonth).forEach(yearMonth => {
+    Object.keys(datesByMonth).forEach((yearMonth) => {
       const orderCardSpreadsheet = getOrderCardSpreadsheetByYearMonth(yearMonth);
       if (orderCardSpreadsheet) {
         orderCardFiles[yearMonth] = orderCardSpreadsheet;
@@ -58,15 +57,14 @@ function exportOrderCardsForPeriod(startDate, endDate) {
         logger.warn(`${yearMonth}のオーダーカードが見つかりませんでした。`);
       }
     });
-    
+
     // Excelエクスポート
     if (Object.keys(orderCardFiles).length === 0) {
       logger.error('エクスポート対象のオーダーカードが見つかりませんでした。');
       return null;
     }
-    
+
     return exportMultipleSpreadsheetsAsExcel(orderCardFiles);
-    
   } catch (e) {
     handleError(e, 'exportOrderCardsForPeriod');
     return null;
@@ -81,21 +79,20 @@ function exportOrderCardsForPeriod(startDate, endDate) {
 function exportMultipleSpreadsheetsAsExcel(spreadsheets) {
   const logger = getContextLogger('exportMultipleSpreadsheetsAsExcel');
   const blobs = [];
-  
+
   try {
-    Object.keys(spreadsheets).forEach(key => {
+    Object.keys(spreadsheets).forEach((key) => {
       const spreadsheet = spreadsheets[key];
       const blob = exportSpreadsheetAsExcel(spreadsheet);
-      
+
       if (blob) {
         blobs.push(blob);
       }
     });
-    
+
     logger.info(`${blobs.length}個のスプレッドシートをExcel形式でエクスポートしました。`);
-    
+
     return blobs;
-    
   } catch (e) {
     handleError(e, 'exportMultipleSpreadsheetsAsExcel');
     return blobs;

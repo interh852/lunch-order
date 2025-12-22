@@ -11,7 +11,7 @@
  */
 function callGeminiApi(prompt, pdfBlob, modelName) {
   const logger = getContextLogger('callGeminiApi');
-  
+
   try {
     const propertyManager = getPropertyManager();
     const apiKey = propertyManager.getGeminiApiKey();
@@ -25,26 +25,26 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
     const pdfBase64 = Utilities.base64Encode(pdfBytes);
 
     const requestBody = {
-      "contents": [
+      contents: [
         {
-          "parts": [
-            { "text": prompt },
+          parts: [
+            { text: prompt },
             {
-              "inline_data": {
-                "mime_type": MIME_TYPES.PDF,
-                "data": pdfBase64
-              }
-            }
-          ]
-        }
-      ]
+              inline_data: {
+                mime_type: MIME_TYPES.PDF,
+                data: pdfBase64,
+              },
+            },
+          ],
+        },
+      ],
     };
 
     const options = {
-      'method': HTTP_METHODS.POST,
-      'contentType': HTTP_CONTENT_TYPES.JSON,
-      'payload': JSON.stringify(requestBody),
-      'muteHttpExceptions': true // エラー時に例外をスローさせない
+      method: HTTP_METHODS.POST,
+      contentType: HTTP_CONTENT_TYPES.JSON,
+      payload: JSON.stringify(requestBody),
+      muteHttpExceptions: true, // エラー時に例外をスローさせない
     };
 
     const url = `${API_ENDPOINTS.GEMINI_BASE_URL}/${modelName}:generateContent?key=${apiKey}`;
@@ -59,7 +59,6 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
       logger.error(`レスポンス: ${responseBody}`);
       return null;
     }
-
   } catch (e) {
     handleError(e, 'callGeminiApi');
     return null;

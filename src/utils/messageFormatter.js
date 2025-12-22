@@ -21,33 +21,33 @@ function formatOrderAnnouncementForSlack(orderAppUrl) {
 function formatOrderChangesForSlack(changes, weekType, detectedAt) {
   const emoji = weekType === 'current' ? '🚨' : '🔄';
   const weekLabel = weekType === 'current' ? '今週分' : '次週分';
-  
+
   let message = `${emoji} 【${weekLabel}】注文変更を検知しました（${detectedAt}）\n\n`;
-  
+
   // 追加された注文
   if (changes.added.length > 0) {
     message += '【追加】\n';
-    changes.added.forEach(change => {
+    changes.added.forEach((change) => {
       const formattedDate = formatJapaneseDateWithDay(change.date);
       const countLabel = change.count > 1 ? ` (${change.count}個)` : '';
       message += `- ${formattedDate} ${change.name} ${change.size}${countLabel}\n`;
     });
     message += '\n';
   }
-  
+
   // キャンセルされた注文
   if (changes.cancelled.length > 0) {
     message += '【キャンセル】\n';
-    changes.cancelled.forEach(change => {
+    changes.cancelled.forEach((change) => {
       const formattedDate = formatJapaneseDateWithDay(change.date);
       const countLabel = change.count > 1 ? ` (${change.count}個)` : '';
       message += `- ${formattedDate} ${change.name} ${change.size}${countLabel}\n`;
     });
     message += '\n';
   }
-  
+
   message += '弁当屋さん宛のメール下書きを作成します。';
-  
+
   return message;
 }
 
@@ -75,16 +75,20 @@ function formatLunchOrdersForSlack(orders) {
   let message = '【来週の弁当注文状況🍱】\n';
 
   // 日付でソートしてメッセージに追加
-  Object.keys(groupedOrders).sort().forEach(dateStr => {
-    const formattedDate = formatJapaneseDateWithDay(dateStr); // MM/DD (曜日) 形式に変換
-    const dailyOrders = groupedOrders[dateStr];
+  Object.keys(groupedOrders)
+    .sort()
+    .forEach((dateStr) => {
+      const formattedDate = formatJapaneseDateWithDay(dateStr); // MM/DD (曜日) 形式に変換
+      const dailyOrders = groupedOrders[dateStr];
 
-    const orderDetails = dailyOrders.map(order => {
-      const countLabel = order.count > 1 ? ` (${order.count}個)` : '';
-      return `${order.name} ${order.size}${countLabel}`;
-    }).join(', ');
-    message += `- ${formattedDate}: ${orderDetails}\n`;
-  });
+      const orderDetails = dailyOrders
+        .map((order) => {
+          const countLabel = order.count > 1 ? ` (${order.count}個)` : '';
+          return `${order.name} ${order.size}${countLabel}`;
+        })
+        .join(', ');
+      message += `- ${formattedDate}: ${orderDetails}\n`;
+    });
 
   return message;
 }

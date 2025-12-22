@@ -47,7 +47,7 @@ function refreshConfig() {
  */
 function _loadAndBuildFullConfig() {
   const logger = getContextLogger('_loadAndBuildFullConfig');
-  
+
   try {
     const spreadsheetId = _getSpreadsheetIdFromProperties();
     if (!spreadsheetId) {
@@ -71,8 +71,10 @@ function _loadAndBuildFullConfig() {
 
     // 必須項目のチェック
     if (!geminiPrompt || !gmailQuery || !botToken || !channelId) {
-        logger.error('エラー: スプレッドシートから必須の設定値（プロンプト、Gmailクエリ、Slackトークン、チャンネルID）が取得できませんでした。');
-        return null;
+      logger.error(
+        'エラー: スプレッドシートから必須の設定値（プロンプト、Gmailクエリ、Slackトークン、チャンネルID）が取得できませんでした。'
+      );
+      return null;
     }
 
     return {
@@ -84,10 +86,9 @@ function _loadAndBuildFullConfig() {
       bentoMailAddress: bentoMailAddress,
       slack: {
         botToken: botToken,
-        channelId: channelId
-      }
+        channelId: channelId,
+      },
     };
-
   } catch (e) {
     handleError(e, '_loadAndBuildFullConfig');
     return null;

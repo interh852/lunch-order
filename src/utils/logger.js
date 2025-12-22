@@ -10,7 +10,7 @@ const LogLevel = {
   INFO: 1,
   WARN: 2,
   ERROR: 3,
-  NONE: 99
+  NONE: 99,
 };
 
 /**
@@ -95,8 +95,12 @@ class Logger {
    */
   _log(levelLabel, message, ...args) {
     const prefixStr = this.prefix ? `[${this.prefix}] ` : '';
-    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), DATE_FORMATS.TIMESTAMP);
-    
+    const timestamp = Utilities.formatDate(
+      new Date(),
+      Session.getScriptTimeZone(),
+      DATE_FORMATS.TIMESTAMP
+    );
+
     if (args.length > 0) {
       console.log(`${timestamp} ${levelLabel} ${prefixStr}${message}`, ...args);
     } else {

@@ -37,20 +37,23 @@ function sendToSlack(message, overrideChannelId = null) {
     method: HTTP_METHODS.POST,
     contentType: HTTP_CONTENT_TYPES.JSON_UTF8,
     headers: {
-      'Authorization': `Bearer ${botToken}`
+      Authorization: `Bearer ${botToken}`,
     },
     payload: JSON.stringify(payload),
-    muteHttpExceptions: true // APIエラー時に例外をスローさせず、レスポンスを直接ハンドルする
+    muteHttpExceptions: true, // APIエラー時に例外をスローさせず、レスポンスを直接ハンドルする
   };
 
   try {
     logger.info(`Slackの ${channelId} へメッセージを投稿します。`);
     const response = UrlFetchApp.fetch(API_ENDPOINTS.SLACK_POST_MESSAGE, options);
     const responseBody = JSON.parse(response.getContentText());
-    
+
     if (responseBody.ok) {
       logger.info('Slackへのメッセージ投稿に成功しました。');
-      return Result.success({ channelId, timestamp: responseBody.ts }, 'Slackへのメッセージ投稿に成功しました');
+      return Result.success(
+        { channelId, timestamp: responseBody.ts },
+        'Slackへのメッセージ投稿に成功しました'
+      );
     } else {
       const error = `Slackへのメッセージ投稿に失敗しました。エラー: ${responseBody.error}`;
       logger.error(error);

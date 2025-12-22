@@ -1,0 +1,15 @@
+{
+  "name": "lunch-order",
+  "version": "1.0.0",
+  "description": "社内のお弁当を発注するためのGASプロジェクトです。 主な機能は以下の通りです。",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "prettier": "^3.7.4"
+  }
+}

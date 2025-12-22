@@ -8,7 +8,7 @@
 function announceNextWeekOrderToSlack() {
   const logger = getContextLogger('announceNextWeekOrderToSlack');
   logger.info('次週の注文募集アナウンスを開始します。');
-  
+
   try {
     // 1. 設定からアプリURLを取得
     const config = getConfig();
@@ -16,15 +16,17 @@ function announceNextWeekOrderToSlack() {
       logger.error('設定の取得に失敗しました。');
       return;
     }
-    
+
     const orderAppUrl = config.orderAppUrl;
     if (!orderAppUrl) {
-      logger.error('注文アプリのURLが設定されていません。スプレッドシート「情報」シートのB10セルを確認してください。');
+      logger.error(
+        '注文アプリのURLが設定されていません。スプレッドシート「情報」シートのB10セルを確認してください。'
+      );
       return;
     }
-    
+
     logger.info(`注文アプリURL: ${orderAppUrl}`);
-    
+
     // 2. メッセージを整形
     const message = formatOrderAnnouncementForSlack(orderAppUrl);
     if (!message) {
@@ -32,10 +34,10 @@ function announceNextWeekOrderToSlack() {
       return;
     }
     logger.debug('整形されたSlackメッセージ:\n' + message);
-    
+
     // 3. Slackに投稿
     const result = sendToSlack(message);
-    
+
     if (Result.isSuccess(result)) {
       logger.info('✅ 注文募集アナウンスをSlackに投稿しました。');
     } else {

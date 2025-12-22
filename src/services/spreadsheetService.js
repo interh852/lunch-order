@@ -43,7 +43,7 @@ class SpreadsheetService {
   writeData(sheetName, data, startRow = null, startColumn = 1) {
     try {
       const sheet = this.getSheet(sheetName);
-      
+
       if (!data || data.length === 0) {
         return Result.success(0, 'データがないためスキップしました');
       }
@@ -80,7 +80,7 @@ class SpreadsheetService {
         return Result.success([], 'データがありません');
       }
 
-      const actualNumRows = numRows !== null ? numRows : (lastRow - startRow + 1);
+      const actualNumRows = numRows !== null ? numRows : lastRow - startRow + 1;
       const actualNumColumns = numColumns !== null ? numColumns : sheet.getLastColumn();
 
       const range = sheet.getRange(startRow, startColumn, actualNumRows, actualNumColumns);

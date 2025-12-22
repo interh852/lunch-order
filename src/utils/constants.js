@@ -9,7 +9,7 @@ const SHEET_NAMES = {
   PROMPT: '情報',
   MENU: 'メニュー',
   ORDER_HISTORY: '注文履歴',
-  SNAPSHOT: '注文スナップショット'
+  SNAPSHOT: '注文スナップショット',
 };
 
 // 後方互換性のため個別定数も維持
@@ -30,7 +30,7 @@ const CELL_ADDRESSES = {
   SLACK_CHANNEL_ID: 'B7',
   SENDER_NAME: 'B8',
   COMPANY_NAME: 'B9',
-  ORDER_APP_URL: 'B10'
+  ORDER_APP_URL: 'B10',
 };
 
 // オーダーカード初期化用のセルアドレス
@@ -51,8 +51,8 @@ const ORDER_APP_URL_CELL = CELL_ADDRESSES.ORDER_APP_URL;
 // シート行/列の定数
 // ========================================
 const SHEET_ROWS = {
-  HEADER_ROW: 1,           // ヘッダー行
-  DATA_START_ROW: 2        // データ開始行
+  HEADER_ROW: 1, // ヘッダー行
+  DATA_START_ROW: 2, // データ開始行
 };
 
 // 後方互換性のため個別定数も維持
@@ -64,7 +64,7 @@ const SHEET_DATA_START_ROW = SHEET_ROWS.DATA_START_ROW;
 // ========================================
 const FILE_CONSTANTS = {
   PROCESSED_SUFFIX: '_processed',
-  MENU_PDF_PATTERN: /^\d{4}|\d{2}\./
+  MENU_PDF_PATTERN: /^\d{4}|\d{2}\./,
 };
 
 // 後方互換性のため個別定数も維持
@@ -78,7 +78,7 @@ const PROPERTY_KEYS = {
   FOLDER_ID_MENU: 'FOLDER_ID_MENU',
   FOLDER_ID_ORDER_CARD: 'FOLDER_ID_ORDER_CARD',
   SPREADSHEET_ID: 'SPREADSHEET_ID',
-  GEMINI_API_KEY: 'GEMINI_API_KEY'
+  GEMINI_API_KEY: 'GEMINI_API_KEY',
 };
 
 // ========================================
@@ -90,24 +90,20 @@ const VALIDATION_CONFIG = {
     PROPERTY_KEYS.FOLDER_ID_MENU,
     PROPERTY_KEYS.FOLDER_ID_ORDER_CARD,
     PROPERTY_KEYS.SPREADSHEET_ID,
-    PROPERTY_KEYS.GEMINI_API_KEY
+    PROPERTY_KEYS.GEMINI_API_KEY,
   ],
-  
+
   // 必須のシート
-  requiredSheets: [
-    SHEET_NAMES.PROMPT,
-    SHEET_NAMES.MENU,
-    SHEET_NAMES.ORDER_HISTORY
-  ],
-  
+  requiredSheets: [SHEET_NAMES.PROMPT, SHEET_NAMES.MENU, SHEET_NAMES.ORDER_HISTORY],
+
   // 必須のセル
   requiredCells: [
     CELL_ADDRESSES.GMAIL_QUERY,
     CELL_ADDRESSES.GEMINI_MODEL,
     CELL_ADDRESSES.GEMINI_PROMPT,
     CELL_ADDRESSES.SLACK_BOT_TOKEN,
-    CELL_ADDRESSES.SLACK_CHANNEL_ID
-  ]
+    CELL_ADDRESSES.SLACK_CHANNEL_ID,
+  ],
 };
 
 // ========================================
@@ -116,7 +112,7 @@ const VALIDATION_CONFIG = {
 const MIME_TYPES = {
   PDF: 'application/pdf',
   XLSX: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  XLS: 'application/vnd.ms-excel'
+  XLS: 'application/vnd.ms-excel',
 };
 
 // ========================================
@@ -124,14 +120,14 @@ const MIME_TYPES = {
 // ========================================
 const HTTP_CONTENT_TYPES = {
   JSON: 'application/json',
-  JSON_UTF8: 'application/json; charset=utf-8'
+  JSON_UTF8: 'application/json; charset=utf-8',
 };
 
 const HTTP_METHODS = {
   GET: 'get',
   POST: 'post',
   PUT: 'put',
-  DELETE: 'delete'
+  DELETE: 'delete',
 };
 
 // ========================================
@@ -139,33 +135,33 @@ const HTTP_METHODS = {
 // ========================================
 const API_ENDPOINTS = {
   SLACK_POST_MESSAGE: 'https://slack.com/api/chat.postMessage',
-  GEMINI_BASE_URL: 'https://generativelanguage.googleapis.com/v1beta/models'
+  GEMINI_BASE_URL: 'https://generativelanguage.googleapis.com/v1beta/models',
 };
 
 // ========================================
 // スプレッドシート列インデックス（0-based）
 // ========================================
 const ORDER_HISTORY_COLUMNS = {
-  ORDER_PERSON_NAME: 2,  // C列 - 注文者名
-  ORDER_DATE: 3,         // D列 - 対象日付
-  STORE_NAME: 4,         // E列 - 店名
-  ORDER_SIZE: 6,         // G列 - サイズ
-  ORDER_COUNT: 7         // H列 - 個数
+  ORDER_PERSON_NAME: 2, // C列 - 注文者名
+  ORDER_DATE: 3, // D列 - 対象日付
+  STORE_NAME: 4, // E列 - 店名
+  ORDER_SIZE: 6, // G列 - サイズ
+  ORDER_COUNT: 7, // H列 - 個数
 };
 
 const MENU_COLUMNS = {
-  DATE: 0,        // A列 - 日付
-  STORE_NAME: 1,  // B列 - 店名
-  MENU: 2         // C列 - 弁当名
+  DATE: 0, // A列 - 日付
+  STORE_NAME: 1, // B列 - 店名
+  MENU: 2, // C列 - 弁当名
 };
 
 const SNAPSHOT_COLUMNS = {
-  PERIOD_KEY: 0,    // A列 - 期間キー (例: 2025.12.16-12.20)
-  ORDER_DATE: 1,    // B列 - 日付 (YYYY/MM/DD)
-  ORDER_NAME: 2,    // C列 - 注文者
-  ORDER_SIZE: 3,    // D列 - サイズ
-  ORDER_COUNT: 4,   // E列 - 個数
-  SAVED_AT: 5       // F列 - 保存日時
+  PERIOD_KEY: 0, // A列 - 期間キー (例: 2025.12.16-12.20)
+  ORDER_DATE: 1, // B列 - 日付 (YYYY/MM/DD)
+  ORDER_NAME: 2, // C列 - 注文者
+  ORDER_SIZE: 3, // D列 - サイズ
+  ORDER_COUNT: 4, // E列 - 個数
+  SAVED_AT: 5, // F列 - 保存日時
 };
 
 // ========================================
@@ -174,17 +170,17 @@ const SNAPSHOT_COLUMNS = {
 const DATE_FORMATS = {
   YYYY_MM_DD_SLASH: 'yyyy/MM/dd',
   YYYY_MM_DD_HYPHEN: 'yyyy-mm-dd',
-  TIMESTAMP: 'yyyy-MM-dd HH:mm:ss'
+  TIMESTAMP: 'yyyy-MM-dd HH:mm:ss',
 };
 
 // ========================================
 // オーダーカードレイアウト
 // ========================================
 const ORDER_CARD_LAYOUT = {
-  FIRST_WEEK_BASE_ROW: 8,    // 1週目の開始行
-  ROWS_PER_WEEK: 4,           // 週ごとの行数（大盛、普通、小盛、空行）
-  COLUMN_OFFSET: 4,           // D列から開始
-  COLUMNS_PER_DAY: 2          // 各曜日ごとの列数
+  FIRST_WEEK_BASE_ROW: 8, // 1週目の開始行
+  ROWS_PER_WEEK: 4, // 週ごとの行数（大盛、普通、小盛、空行）
+  COLUMN_OFFSET: 4, // D列から開始
+  COLUMNS_PER_DAY: 2, // 各曜日ごとの列数
 };
 
 // ========================================
@@ -193,12 +189,12 @@ const ORDER_CARD_LAYOUT = {
 const SIZE_CATEGORIES = {
   LARGE: '大盛',
   REGULAR: '普通',
-  SMALL: '小盛'
+  SMALL: '小盛',
 };
 
 const SIZE_KEYWORDS = {
   LARGE: ['大', 'L'],
-  SMALL: ['小', 'S']
+  SMALL: ['小', 'S'],
 };
 
 // ========================================
@@ -206,7 +202,7 @@ const SIZE_KEYWORDS = {
 // ========================================
 const GMAIL_SEARCH = {
   SUBJECT_KEYWORDS: ['弁当', 'お弁当'],
-  SEARCH_DAYS_BACK: 14  // 過去14日分を検索
+  SEARCH_DAYS_BACK: 14, // 過去14日分を検索
 };
 
 // ========================================
@@ -216,7 +212,7 @@ const EMAIL_TEMPLATES = {
   SUBJECT_PREFIX: 'のお弁当について',
   GREETING: '様\n\nいつもお世話になります。',
   BODY_MAIN: '来週のお弁当のオーダーカードを添付の通り送付させて頂きます。',
-  CLOSING: '以上、よろしくお願いいたします。'
+  CLOSING: '以上、よろしくお願いいたします。',
 };
 
 // ========================================
@@ -230,16 +226,16 @@ const EMAIL_TEMPLATES = {
 function validateScriptProperties() {
   const properties = PropertiesService.getScriptProperties();
   const missing = [];
-  
-  VALIDATION_CONFIG.requiredProperties.forEach(key => {
+
+  VALIDATION_CONFIG.requiredProperties.forEach((key) => {
     if (!properties.getProperty(key)) {
       missing.push(key);
     }
   });
-  
+
   return {
     valid: missing.length === 0,
-    missing: missing
+    missing: missing,
   };
 }
 
@@ -252,22 +248,22 @@ function validateRequiredSheets(spreadsheetId) {
   try {
     const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
     const missing = [];
-    
-    VALIDATION_CONFIG.requiredSheets.forEach(sheetName => {
+
+    VALIDATION_CONFIG.requiredSheets.forEach((sheetName) => {
       if (!spreadsheet.getSheetByName(sheetName)) {
         missing.push(sheetName);
       }
     });
-    
+
     return {
       valid: missing.length === 0,
-      missing: missing
+      missing: missing,
     };
   } catch (e) {
     return {
       valid: false,
       missing: VALIDATION_CONFIG.requiredSheets,
-      error: e.message
+      error: e.message,
     };
   }
 }
@@ -279,21 +275,21 @@ function validateRequiredSheets(spreadsheetId) {
  */
 function normalizeSizeCategory(size) {
   if (!size) return SIZE_CATEGORIES.REGULAR;
-  
+
   // 大盛の判定
   for (const keyword of SIZE_KEYWORDS.LARGE) {
     if (size.includes(keyword)) {
       return SIZE_CATEGORIES.LARGE;
     }
   }
-  
+
   // 小盛の判定
   for (const keyword of SIZE_KEYWORDS.SMALL) {
     if (size.includes(keyword)) {
       return SIZE_CATEGORIES.SMALL;
     }
   }
-  
+
   // デフォルトは普通
   return SIZE_CATEGORIES.REGULAR;
 }
@@ -304,13 +300,13 @@ function normalizeSizeCategory(size) {
  */
 function validateConfiguration() {
   const errors = [];
-  
+
   // スクリプトプロパティのチェック
   const propertiesResult = validateScriptProperties();
   if (!propertiesResult.valid) {
     errors.push(`未設定のスクリプトプロパティ: ${propertiesResult.missing.join(', ')}`);
   }
-  
+
   // スプレッドシートIDが設定されている場合はシートもチェック
   const properties = PropertiesService.getScriptProperties();
   const spreadsheetId = properties.getProperty(PROPERTY_KEYS.SPREADSHEET_ID);
@@ -324,9 +320,9 @@ function validateConfiguration() {
       }
     }
   }
-  
+
   return {
     valid: errors.length === 0,
-    errors: errors
+    errors: errors,
   };
 }

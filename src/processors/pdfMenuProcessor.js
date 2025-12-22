@@ -41,7 +41,7 @@ function getMenuFolderAndStoreName() {
     const propertyManager = getPropertyManager();
     const menuFolderId = propertyManager.getMenuFolderId();
     const menuFolder = DriveApp.getFolderById(menuFolderId);
-    
+
     const parents = menuFolder.getParents();
     if (!parents.hasNext()) {
       logger.error(`フォルダID「${menuFolderId}」の親フォルダが見つかりませんでした。`);
@@ -112,10 +112,17 @@ function processSinglePdfFile(pdfFile, storeName) {
     return false;
   }
 
-  const updatedMenuData = _transformMenuData(menuDataFromGemini, yearFromFile, monthFromFile, storeName);
+  const updatedMenuData = _transformMenuData(
+    menuDataFromGemini,
+    yearFromFile,
+    monthFromFile,
+    storeName
+  );
 
   if (updatedMenuData.length === 0) {
-    logger.warn(`ファイル「${fileName}」から有効な日付を持つメニューデータが抽出されませんでした。`);
+    logger.warn(
+      `ファイル「${fileName}」から有効な日付を持つメニューデータが抽出されませんでした。`
+    );
     return false;
   }
 
@@ -151,14 +158,16 @@ function _extractYearMonthFromFile(fileName) {
  * @returns {Array<Object>} 変換されたメニューデータの配列
  */
 function _transformMenuData(menuDataFromGemini, yearFromFile, monthFromFile, storeName) {
-  return menuDataFromGemini.map(item => {
-    const day = item.date.split('/')[2] || item.date.split('-')[2];
-    return {
-      date: `${yearFromFile}-${monthFromFile}-${day.padStart(2, '0')}`,
-      storeName: storeName,
-      menu: item.menu
-    };
-  }).filter(item => item.date.split('-')[2]);
+  return menuDataFromGemini
+    .map((item) => {
+      const day = item.date.split('/')[2] || item.date.split('-')[2];
+      return {
+        date: `${yearFromFile}-${monthFromFile}-${day.padStart(2, '0')}`,
+        storeName: storeName,
+        menu: item.menu,
+      };
+    })
+    .filter((item) => item.date.split('-')[2]);
 }
 
 /**
