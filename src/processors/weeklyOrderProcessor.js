@@ -11,16 +11,38 @@ function processWeeklyOrdersAndCreateDraft() {
 
   try {
     // 基準となる現在時刻を取得
-    const now = new Date();
+    let targetBaseDate = new Date();
+    let nextWeekdays = getNextWeekdays(targetBaseDate);
+    
+    // メニューが存在する週が見つかるまで、最大4週間先まで探索する
+    let weeksChecked = 0;
+    const MAX_WEEKS_AHEAD = 4;
+    let menuFound = false;
 
-    // 次週の平日を取得して、メニューがあるか確認
-    const nextWeekdays = getNextWeekdays(now);
-    if (!hasMenuForRange(nextWeekdays)) {
+    while (weeksChecked < MAX_WEEKS_AHEAD) {
+      if (hasMenuForRange(nextWeekdays)) {
+        menuFound = true;
+        break;
+      }
+
       logger.info(
-        '対象期間のメニューが登録されていないため、週次注文処理をスキップしました。'
+        `期間 ${nextWeekdays[0]} 〜 ${nextWeekdays[nextWeekdays.length - 1]} のメニューが登録されていないため、翌週をチェックします。`
+      );
+
+      // 1週間進める
+      targetBaseDate.setDate(targetBaseDate.getDate() + 7);
+      nextWeekdays = getNextWeekdays(targetBaseDate);
+      weeksChecked++;
+    }
+
+    if (!menuFound) {
+      logger.warn(
+        `直近${MAX_WEEKS_AHEAD}週間分のメニューが見つからなかったため、週次注文処理をスキップしました。`
       );
       return;
     }
+
+    logger.info(`発注対象期間: ${nextWeekdays[0]} 〜 ${nextWeekdays[nextWeekdays.length - 1]}`);
 
     // 1. オーダーカードに転記（差分も取得）
     const result = writeOrdersToOrderCard(nextWeekdays);
