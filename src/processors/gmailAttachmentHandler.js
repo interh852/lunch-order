@@ -182,7 +182,7 @@ function getAttachmentDestination(attachment, message, folders) {
   // 受信したメニューが翌月のものであることを想定し、翌月の年月を取得する
   const nextMonthDate = new Date(receivedDate.getFullYear(), receivedDate.getMonth() + 1, 1);
   const year = nextMonthDate.getFullYear();
-  const month = ('0' + (nextMonthDate.getMonth() + 1)).slice(-2);
+  const month = formatToTwoDigits(nextMonthDate.getMonth() + 1);
 
   let newFileName;
   let targetFolder;

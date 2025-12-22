@@ -10,15 +10,20 @@ function processWeeklyOrdersAndCreateDraft() {
   const logger = getContextLogger('processWeeklyOrdersAndCreateDraft');
 
   try {
+    // 基準となる現在時刻を取得
+    const now = new Date();
+
     // 次週の平日を取得して、メニューがあるか確認
-    const nextWeekdays = getNextWeekdays(new Date());
+    const nextWeekdays = getNextWeekdays(now);
     if (!hasMenuForRange(nextWeekdays)) {
-      logger.info('対象期間のメニューが登録されていないため、週次注文処理をスキップしました。');
+      logger.info(
+        '対象期間のメニューが登録されていないため、週次注文処理をスキップしました。'
+      );
       return;
     }
 
     // 1. オーダーカードに転記（差分も取得）
-    const result = writeOrdersToOrderCard();
+    const result = writeOrdersToOrderCard(nextWeekdays);
 
     if (!result.hasOrders) {
       logger.warn('注文データがないため、メール下書きは作成しません。');
@@ -38,7 +43,9 @@ function processWeeklyOrdersAndCreateDraft() {
     const bentoMailAddress = config.bentoMailAddress;
 
     if (!bentoMailAddress) {
-      logger.error('BENTO_MAIL_ADDRESSが設定されていません。メール下書きの作成をスキップします。');
+      logger.error(
+        'BENTO_MAIL_ADDRESSが設定されていません。メール下書きの作成をスキップします。'
+      );
       return;
     }
 
@@ -66,8 +73,7 @@ function processWeeklyOrdersAndCreateDraft() {
         const periodKey = generatePeriodKey(result.period.start, result.period.end);
         logger.info(`スナップショットを保存します: ${periodKey}`);
 
-        // 次週の注文データを再取得
-        const nextWeekdays = getNextWeekdays(new Date());
+        // 注文データを再取得（すでに取得済みの nextWeekdays を使用）
         const orders = getLunchOrdersForNextWeek(nextWeekdays);
 
         if (orders.length > 0) {
@@ -92,20 +98,19 @@ function processWeeklyOrdersAndCreateDraft() {
  * 次週の注文内容を集計してオーダーカードに転記する
  * オーダーカードフォルダから最新のスプレッドシートを取得し、
  * 注文履歴から次週分の注文を日付×サイズで集計して書き込みます
+ * @param {string[]} nextWeekdays - YYYY/MM/DD形式の次週の日付文字列の配列
  * @returns {Object} 変更情報（差分データ）を含むオブジェクト
  */
-function writeOrdersToOrderCard() {
+function writeOrdersToOrderCard(nextWeekdays) {
   const logger = getContextLogger('writeOrdersToOrderCard');
   logger.info('=== オーダーカード転記処理開始 ===');
 
   try {
-    // 1. 次週の平日を取得（文字列配列: YYYY/MM/DD）
-    const nextWeekdays = getNextWeekdays(new Date());
+    // 引数で渡された nextWeekdays を使用
     logger.info(`対象期間: ${nextWeekdays[0]} 〜 ${nextWeekdays[nextWeekdays.length - 1]}`);
 
     // 2. 次週の注文内容を取得
     const orders = getLunchOrdersForNextWeek(nextWeekdays);
-    logger.info(`注文データ: ${orders.length}件`);
 
     if (orders.length === 0) {
       logger.warn('次週の注文データがありません。');
