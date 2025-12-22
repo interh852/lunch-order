@@ -13,7 +13,7 @@ function processWeeklyOrdersAndCreateDraft() {
     // 基準となる現在時刻を取得
     let targetBaseDate = new Date();
     let nextWeekdays = getNextWeekdays(targetBaseDate);
-    
+
     // メニューが存在する週が見つかるまで、最大4週間先まで探索する
     let weeksChecked = 0;
     const MAX_WEEKS_AHEAD = 4;
@@ -76,9 +76,7 @@ function processWeeklyOrdersAndCreateDraft() {
     const bentoMailAddress = config.bentoMailAddress;
 
     if (!bentoMailAddress) {
-      logger.error(
-        'BENTO_MAIL_ADDRESSが設定されていません。メール下書きの作成をスキップします。'
-      );
+      logger.error('BENTO_MAIL_ADDRESSが設定されていません。メール下書きの作成をスキップします。');
       return;
     }
 
