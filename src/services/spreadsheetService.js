@@ -63,6 +63,26 @@ class SpreadsheetService {
   }
 
   /**
+   * 指定範囲のコンテンツをクリア
+   * @param {string} sheetName シート名
+   * @param {number} startRow 開始行
+   * @param {number} startColumn 開始列
+   * @param {number} numRows 行数
+   * @param {number} numColumns 列数
+   * @returns {Object} Result型のオブジェクト
+   */
+  clearRange(sheetName, startRow, startColumn, numRows, numColumns) {
+    try {
+      const sheet = this.getSheet(sheetName);
+      sheet.getRange(startRow, startColumn, numRows, numColumns).clearContent();
+      return Result.success(true, '範囲をクリアしました');
+    } catch (e) {
+      handleError(e, 'SpreadsheetService.clearRange');
+      return Result.failure(e, false);
+    }
+  }
+
+  /**
    * シートからデータを読み込む
    * @param {string} sheetName シート名
    * @param {number} startRow 開始行（デフォルト: 2、ヘッダーをスキップ）

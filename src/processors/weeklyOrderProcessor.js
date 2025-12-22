@@ -267,9 +267,12 @@ function writeAggregatedOrdersToSpreadsheet(spreadsheet, aggregatedOrders, dateS
 
   try {
     const sheet = spreadsheet.getSheets()[0]; // 最初のシートを使用
+    const sheetName = sheet.getName();
+
+    // SpreadsheetServiceのインスタンスを作成（このスプレッドシート専用）
+    const spreadsheetService = new SpreadsheetService(spreadsheet.getId());
 
     // 日付文字列から週番号を計算（何週目か）
-    // YYYY/MM/DD を Date に変換
     const firstDateStr = dateStrings[0];
     const firstDate = new Date(firstDateStr);
     const weekNumber = Math.ceil(firstDate.getDate() / 7); // 1〜5週目
@@ -288,58 +291,25 @@ function writeAggregatedOrdersToSpreadsheet(spreadsheet, aggregatedOrders, dateS
     // 書き込み前に前回の値を読み取る
     const previousValues = readPreviousOrderValues(sheet, weekNumber, dateStrings);
 
-    // 書き込み前に対象週の全セルをクリア（月〜金の5日分）
+    // 書き込み範囲の定義
     const startColumn = ORDER_CARD_LAYOUT.COLUMN_OFFSET; // D列
     const numDays = 5; // 月〜金
     const numColumns = numDays * ORDER_CARD_LAYOUT.COLUMNS_PER_DAY;
 
-    // 大盛、普通、小盛の3行をクリア
-    sheet.getRange(rowLarge, startColumn, 1, numColumns).clearContent();
-    sheet.getRange(rowRegular, startColumn, 1, numColumns).clearContent();
-    sheet.getRange(rowSmall, startColumn, 1, numColumns).clearContent();
+    // 大盛、普通、小盛の3行を一括クリア
+    spreadsheetService.clearRange(sheetName, baseRow, startColumn, 3, numColumns);
 
     logger.debug(
-      `${weekNumber}週目のセルをクリアしました (行: ${rowLarge}-${rowSmall}, 列: ${startColumn}-${startColumn + numColumns - 1})`
+      `${weekNumber}週目のセルをクリアしました (行: ${rowLarge}-${rowSmall}, 列: ${startColumn}-${
+        startColumn + numColumns - 1
+      })`
     );
 
-    // 各曜日のデータを書き込み
-    dateStrings.forEach((dateStr, index) => {
-      const orders = aggregatedOrders[dateStr];
+    // 書き込み用データのマトリックスを作成
+    const matrix = createOrderMatrix(aggregatedOrders, dateStrings, startColumn);
 
-      if (!orders) {
-        logger.debug(`${dateStr}: 注文なし`);
-        return;
-      }
-
-      // dateStrから曜日を計算
-      const date = new Date(dateStr);
-      const dayOfWeek = date.getDay(); // 0:日, 1:月, ..., 6:土
-
-      // 月曜(1)から金曜(5)のみ処理
-      if (dayOfWeek < 1 || dayOfWeek > 5) {
-        logger.warn(`${dateStr}は平日ではありません (曜日: ${dayOfWeek})`);
-        return;
-      }
-
-      // 列番号を計算（月=D列(4), 火=F列(6), 水=H列(8), 木=J列(10), 金=L列(12)）
-      const column =
-        ORDER_CARD_LAYOUT.COLUMN_OFFSET + (dayOfWeek - 1) * ORDER_CARD_LAYOUT.COLUMNS_PER_DAY;
-
-      logger.debug(
-        `${dateStr}: ${SIZE_CATEGORIES.LARGE}=${orders[SIZE_CATEGORIES.LARGE]}, ${SIZE_CATEGORIES.REGULAR}=${orders[SIZE_CATEGORIES.REGULAR]}, ${SIZE_CATEGORIES.SMALL}=${orders[SIZE_CATEGORIES.SMALL]} (列${column})`
-      );
-
-      // 各サイズの個数を書き込み
-      if (orders[SIZE_CATEGORIES.LARGE] > 0) {
-        sheet.getRange(rowLarge, column).setValue(orders[SIZE_CATEGORIES.LARGE]);
-      }
-      if (orders[SIZE_CATEGORIES.REGULAR] > 0) {
-        sheet.getRange(rowRegular, column).setValue(orders[SIZE_CATEGORIES.REGULAR]);
-      }
-      if (orders[SIZE_CATEGORIES.SMALL] > 0) {
-        sheet.getRange(rowSmall, column).setValue(orders[SIZE_CATEGORIES.SMALL]);
-      }
-    });
+    // 一括書き込み
+    spreadsheetService.writeData(sheetName, matrix, baseRow, startColumn);
 
     logger.info(`オーダーカードへの書き込みが完了しました。`);
 
@@ -351,6 +321,63 @@ function writeAggregatedOrdersToSpreadsheet(spreadsheet, aggregatedOrders, dateS
     handleError(e, 'writeAggregatedOrdersToSpreadsheet');
     return {};
   }
+}
+
+/**
+ * 書き込み用の注文データマトリックス（3行×全列）を作成する
+ * @param {Object} aggregatedOrders - 集計された注文データ
+ * @param {Array<string>} dateStrings - 対象の日付文字列配列
+ * @param {number} startColumn - 開始列番号
+ * @returns {Array<Array<string|number>>} 書き込み用の2次元配列
+ */
+function createOrderMatrix(aggregatedOrders, dateStrings, startColumn) {
+  const logger = getContextLogger('createOrderMatrix');
+  const numDays = 5; // 月〜金
+  const numColumns = numDays * ORDER_CARD_LAYOUT.COLUMNS_PER_DAY;
+
+  // 3行 × 列数の配列を作成（初期値は空文字）
+  // 行0: 大盛, 行1: 普通, 行2: 小盛
+  const matrix = Array(3)
+    .fill(null)
+    .map(() => Array(numColumns).fill(''));
+
+  // 各曜日のデータをマトリックスにセット
+  dateStrings.forEach((dateStr) => {
+    const orders = aggregatedOrders[dateStr];
+
+    if (!orders) {
+      return;
+    }
+
+    // dateStrから曜日を計算
+    const date = new Date(dateStr);
+    const dayOfWeek = date.getDay(); // 0:日, 1:月, ..., 6:土
+
+    // 月曜(1)から金曜(5)のみ処理
+    if (dayOfWeek < 1 || dayOfWeek > 5) {
+      logger.warn(`${dateStr}は平日ではありません (曜日: ${dayOfWeek})`);
+      return;
+    }
+
+    // マトリックス内の列インデックスを計算
+    // シート上の列番号 - 開始列番号
+    const sheetColumn =
+      ORDER_CARD_LAYOUT.COLUMN_OFFSET + (dayOfWeek - 1) * ORDER_CARD_LAYOUT.COLUMNS_PER_DAY;
+    const matrixColIndex = sheetColumn - startColumn;
+
+    // マトリックスに値をセット
+    if (orders[SIZE_CATEGORIES.LARGE] > 0) {
+      matrix[0][matrixColIndex] = orders[SIZE_CATEGORIES.LARGE];
+    }
+    if (orders[SIZE_CATEGORIES.REGULAR] > 0) {
+      matrix[1][matrixColIndex] = orders[SIZE_CATEGORIES.REGULAR];
+    }
+    if (orders[SIZE_CATEGORIES.SMALL] > 0) {
+      matrix[2][matrixColIndex] = orders[SIZE_CATEGORIES.SMALL];
+    }
+  });
+
+  return matrix;
 }
 
 /**
