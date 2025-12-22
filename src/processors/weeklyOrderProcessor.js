@@ -42,7 +42,18 @@ function processWeeklyOrdersAndCreateDraft() {
       return;
     }
 
-    logger.info(`発注対象期間: ${nextWeekdays[0]} 〜 ${nextWeekdays[nextWeekdays.length - 1]}`);
+    const startDate = nextWeekdays[0];
+    const endDate = nextWeekdays[nextWeekdays.length - 1];
+
+    // 0. 対象期間の注文メールが送信済みかチェック
+    if (hasOrderEmailBeenSent(startDate, endDate)) {
+      logger.info(
+        `期間 ${startDate} 〜 ${endDate} の注文メールは既に送信済みのため、週次注文処理をスキップします。`
+      );
+      return;
+    }
+
+    logger.info(`発注対象期間: ${startDate} 〜 ${endDate}`);
 
     // 1. オーダーカードに転記（差分も取得）
     const result = writeOrdersToOrderCard(nextWeekdays);
