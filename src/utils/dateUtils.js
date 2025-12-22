@@ -3,6 +3,15 @@
  */
 
 /**
+ * 数値を2桁の文字列にフォーマットします（ゼロパディング）。
+ * @param {number} num フォーマットする数値
+ * @returns {string} 2桁の文字列 (例: 5 -> '05', 12 -> '12')
+ */
+function formatToTwoDigits(num) {
+  return num.toString().padStart(2, '0');
+}
+
+/**
  * 指定された日付から次の週の月曜日から金曜日までの日付をYYYY/MM/DD形式の文字列で取得します。
  * 基準日が木曜日であることを想定していますが、任意の日付から計算可能です。
  *
@@ -24,18 +33,10 @@ function getNextWeekdays(baseDate) {
   const daysUntilNextMonday = (1 - dayOfWeek + 7) % 7;
   nextMonday.setDate(current.getDate() + (daysUntilNextMonday === 0 ? 7 : daysUntilNextMonday));
 
-  // YYYY/MM/DD形式の関数
-  const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${year}/${month}/${day}`;
-  };
-
   // 月曜日から金曜日までをループ
   for (let i = 0; i < 5; i++) {
     const day = new Date(nextMonday.getTime() + i * oneDay);
-    nextWeekdays.push(formatDate(day));
+    nextWeekdays.push(formatDateToYYYYMMDD(day));
   }
 
   return nextWeekdays;
@@ -43,7 +44,7 @@ function getNextWeekdays(baseDate) {
 
 /**
  * 指定された日付から今週の月曜日から金曜日までの日付をYYYY/MM/DD形式の文字列で取得します。
- * 
+ *
  * @param {Date} baseDate 基準となる日付オブジェクト。
  * @returns {string[]} 今週の月曜日から金曜日までの日付文字列の配列 (例: ['2025/12/16', '2025/12/17', ..., '2025/12/20'])。
  */
@@ -59,21 +60,13 @@ function getCurrentWeekdays(baseDate) {
 
   // 今週の月曜日を計算
   let currentMonday = new Date(current.getTime());
-  const daysFromMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1); // 日曜日の場合は前週の月曜日
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 日曜日の場合は前週の月曜日
   currentMonday.setDate(current.getDate() - daysFromMonday);
-
-  // YYYY/MM/DD形式の関数
-  const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${year}/${month}/${day}`;
-  };
 
   // 月曜日から金曜日までをループ
   for (let i = 0; i < 5; i++) {
     const day = new Date(currentMonday.getTime() + i * oneDay);
-    currentWeekdays.push(formatDate(day));
+    currentWeekdays.push(formatDateToYYYYMMDD(day));
   }
 
   return currentWeekdays;
@@ -86,9 +79,21 @@ function getCurrentWeekdays(baseDate) {
  */
 function formatJapaneseDateWithDay(dateString) {
   const date = new Date(dateString);
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
+  const month = formatToTwoDigits(date.getMonth() + 1);
+  const day = formatToTwoDigits(date.getDate());
   const days = ['日', '月', '火', '水', '木', '金', '土'];
   const dayOfWeek = days[date.getDay()];
   return `${month}/${day} (${dayOfWeek})`;
+}
+
+/**
+ * 日付オブジェクトをYYYY/MM/DD形式の文字列に変換します。
+ * @param {Date} date 変換する日付オブジェクト
+ * @returns {string} YYYY/MM/DD形式の文字列
+ */
+function formatDateToYYYYMMDD(date) {
+  const year = date.getFullYear();
+  const month = formatToTwoDigits(date.getMonth() + 1);
+  const day = formatToTwoDigits(date.getDate());
+  return `${year}/${month}/${day}`;
 }

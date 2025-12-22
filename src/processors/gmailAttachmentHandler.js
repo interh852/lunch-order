@@ -3,7 +3,7 @@
  */
 function saveGmailAttachmentsToDrive() {
   const logger = getContextLogger('saveGmailAttachmentsToDrive');
-  
+
   try {
     const folders = getScriptPropertiesAndFolders();
     if (!folders) {
@@ -35,29 +35,28 @@ function saveGmailAttachmentsToDrive() {
  */
 function getCompanyNameFromPromptSheet() {
   const logger = getContextLogger('getCompanyNameFromPromptSheet');
-  
+
   try {
     const propertyManager = getPropertyManager();
     const spreadsheetId = propertyManager.getSpreadsheetId();
     const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
     const sheet = spreadsheet.getSheetByName(PROMPT_SHEET_NAME);
-    
+
     if (!sheet) {
       logger.error(`シート「${PROMPT_SHEET_NAME}」が見つかりません。`);
       return '';
     }
-    
+
     // B9セルから社名を取得
     const companyName = sheet.getRange(COMPANY_NAME_CELL).getValue();
-    
+
     if (!companyName) {
       logger.warn('B9セルに社名が設定されていません。');
       return '';
     }
-    
+
     logger.debug(`社名を取得しました: ${companyName}`);
     return companyName;
-    
   } catch (e) {
     handleError(e, 'getCompanyNameFromPromptSheet');
     return '';
@@ -76,7 +75,7 @@ function getScriptPropertiesAndFolders() {
 
     return {
       menu: DriveApp.getFolderById(menuFolderId),
-      orderCard: DriveApp.getFolderById(orderCardFolderId)
+      orderCard: DriveApp.getFolderById(orderCardFolderId),
     };
   } catch (e) {
     handleError(e, 'getScriptPropertiesAndFolders');
@@ -99,12 +98,14 @@ function processGmailThreads(gmailQuery, folders) {
     return;
   }
 
-  threads.forEach(thread => {
-    thread.getMessages().forEach(message => {
+  threads.forEach((thread) => {
+    thread.getMessages().forEach((message) => {
       const attachments = message.getAttachments();
       if (attachments.length > 0) {
-        logger.debug(`件名「${message.getSubject()}」のメールに${attachments.length}個の添付ファイルが見つかりました。`);
-        attachments.forEach(attachment => {
+        logger.debug(
+          `件名「${message.getSubject()}」のメールに${attachments.length}個の添付ファイルが見つかりました。`
+        );
+        attachments.forEach((attachment) => {
           saveAttachment(attachment, message, folders);
         });
       }
@@ -129,10 +130,12 @@ function saveAttachment(attachment, message, folders) {
   try {
     const originalFileName = attachment.getName();
     const finalNormalizedFileName = normalizeFileName(originalFileName);
-    
+
     // 処理対象かどうかを判定
     if (!isTargetAttachment(attachment, finalNormalizedFileName)) {
-      logger.debug(`  - ファイル「${originalFileName}(正規化後: ${finalNormalizedFileName})」は処理対象外のため、スキップしました。`);
+      logger.debug(
+        `  - ファイル「${originalFileName}(正規化後: ${finalNormalizedFileName})」は処理対象外のため、スキップしました。`
+      );
       return;
     }
 
@@ -140,9 +143,11 @@ function saveAttachment(attachment, message, folders) {
 
     const contentType = attachment.getContentType();
     saveFileToDrive(attachment, newFileName, targetFolder, originalFileName, contentType);
-
   } catch (e) {
-    const fileNameForError = (attachment && typeof attachment.getName === 'function') ? attachment.getName() : '不明なファイル';
+    const fileNameForError =
+      attachment && typeof attachment.getName === 'function'
+        ? attachment.getName()
+        : '不明なファイル';
     handleError(e, `saveAttachment: ${fileNameForError}`);
   }
 }
@@ -177,7 +182,7 @@ function getAttachmentDestination(attachment, message, folders) {
   // 受信したメニューが翌月のものであることを想定し、翌月の年月を取得する
   const nextMonthDate = new Date(receivedDate.getFullYear(), receivedDate.getMonth() + 1, 1);
   const year = nextMonthDate.getFullYear();
-  const month = ('0' + (nextMonthDate.getMonth() + 1)).slice(-2);
+  const month = formatToTwoDigits(nextMonthDate.getMonth() + 1);
 
   let newFileName;
   let targetFolder;
@@ -186,7 +191,7 @@ function getAttachmentDestination(attachment, message, folders) {
   if (contentType === MIME_TYPES.PDF) {
     newFileName = `${year}.${month}.pdf`;
     targetFolder = folders.menu;
-  } 
+  }
   // Excelの場合はオーダーカードフォルダにGoogleスプレッドシートとして保存
   else if (contentType === MIME_TYPES.XLSX || contentType === MIME_TYPES.XLS) {
     newFileName = `オーダーカード${year}.${month}`;
@@ -205,7 +210,7 @@ function getAttachmentDestination(attachment, message, folders) {
  */
 function saveFileToDrive(attachment, newFileName, targetFolder, originalFileName, contentType) {
   const logger = getContextLogger('saveFileToDrive');
-  
+
   // Excelファイルの場合はGoogleスプレッドシートに変換して保存
   if (contentType === MIME_TYPES.XLSX || contentType === MIME_TYPES.XLS) {
     saveExcelAsSpreadsheet(attachment, newFileName, targetFolder, originalFileName);
@@ -215,22 +220,26 @@ function saveFileToDrive(attachment, newFileName, targetFolder, originalFileName
     const files = targetFolder.getFilesByName(fullFileName);
 
     if (files.hasNext()) {
-      logger.debug(`  - ファイル「${fullFileName}」は既に「${targetFolder.getName()}」フォルダに存在するため、スキップしました。`);
+      logger.debug(
+        `  - ファイル「${fullFileName}」は既に「${targetFolder.getName()}」フォルダに存在するため、スキップしました。`
+      );
     } else {
       const blob = attachment.copyBlob();
       blob.setName(fullFileName);
       const file = targetFolder.createFile(blob);
-      logger.info(`  - ファイル「${file.getName()}」を「${targetFolder.getName()}」フォルダに保存しました。(元ファイル名: ${originalFileName})`);
+      logger.info(
+        `  - ファイル「${file.getName()}」を「${targetFolder.getName()}」フォルダに保存しました。(元ファイル名: ${originalFileName})`
+      );
     }
   }
 }
 
 /**
  * ExcelファイルをGoogleスプレッドシートに変換して保存する
- * 
+ *
  * 【重要】この機能を使用するには、GASエディタで「Drive API (v3)」サービスを有効にする必要があります。
  * 手順: GASエディタ → 左メニュー「サービス」→「Drive API」を追加 → バージョン「v3」を選択
- * 
+ *
  * @param {GoogleAppsScript.Gmail.GmailAttachment} attachment - 保存する添付ファイル
  * @param {string} newFileName - 保存するファイル名（拡張子なし）
  * @param {GoogleAppsScript.Drive.Folder} targetFolder - 保存先フォルダ
@@ -238,50 +247,57 @@ function saveFileToDrive(attachment, newFileName, targetFolder, originalFileName
  */
 function saveExcelAsSpreadsheet(attachment, newFileName, targetFolder, originalFileName) {
   const logger = getContextLogger('saveExcelAsSpreadsheet');
-  
+
   try {
     // 既存のスプレッドシートがあるかチェック
     const existingFiles = targetFolder.getFilesByName(newFileName);
     if (existingFiles.hasNext()) {
-      logger.debug(`  - スプレッドシート「${newFileName}」は既に「${targetFolder.getName()}」フォルダに存在するため、スキップしました。`);
+      logger.debug(
+        `  - スプレッドシート「${newFileName}」は既に「${targetFolder.getName()}」フォルダに存在するため、スキップしました。`
+      );
       return;
     }
-    
+
     // ExcelファイルをGoogleスプレッドシートとして直接作成
     const blob = attachment.copyBlob();
     const resource = {
       name: newFileName,
       mimeType: MimeType.GOOGLE_SHEETS,
-      parents: [targetFolder.getId()]
+      parents: [targetFolder.getId()],
     };
-    
+
     const createdFile = Drive.Files.create(resource, blob, {
-      supportsAllDrives: true
+      supportsAllDrives: true,
     });
-    
+
     // 作成されたスプレッドシートを開いて社名を書き込む
     try {
       const spreadsheet = SpreadsheetApp.openById(createdFile.id);
       const sheet = spreadsheet.getSheets()[0];
-      
+
       // 情報シートのB9セルから社名を取得
       const companyName = getCompanyNameFromPromptSheet();
-      
+
       if (companyName) {
         sheet.getRange(ORDER_CARD_INIT_CELL).setValue(companyName);
         logger.debug(`  - ${ORDER_CARD_INIT_CELL}セルに"${companyName}"を書き込みました。`);
       } else {
-        logger.warn(`  - 社名の取得に失敗しました。${ORDER_CARD_INIT_CELL}セルへの書き込みをスキップします。`);
+        logger.warn(
+          `  - 社名の取得に失敗しました。${ORDER_CARD_INIT_CELL}セルへの書き込みをスキップします。`
+        );
       }
     } catch (e) {
       logger.warn(`  - ${ORDER_CARD_INIT_CELL}セルへの書き込みに失敗しました: ${e.message}`);
     }
-    
-    logger.info(`  - ファイル「${newFileName}」をGoogleスプレッドシートとして「${targetFolder.getName()}」フォルダに保存しました。(元ファイル名: ${originalFileName})`);
-    
+
+    logger.info(
+      `  - ファイル「${newFileName}」をGoogleスプレッドシートとして「${targetFolder.getName()}」フォルダに保存しました。(元ファイル名: ${originalFileName})`
+    );
   } catch (e) {
     if (e.message && e.message.includes('Drive is not defined')) {
-      logger.error('Drive APIが有効になっていません。GASエディタで「サービス」から「Drive API (v3)」を追加してください。');
+      logger.error(
+        'Drive APIが有効になっていません。GASエディタで「サービス」から「Drive API (v3)」を追加してください。'
+      );
     }
     handleError(e, 'saveExcelAsSpreadsheet');
   }

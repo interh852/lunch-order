@@ -8,23 +8,38 @@
 function announceNextWeekOrderToSlack() {
   const logger = getContextLogger('announceNextWeekOrderToSlack');
   logger.info('次週の注文募集アナウンスを開始します。');
-  
+
   try {
+    // 0. 次週の注文メールが送信済みかチェック
+    const today = new Date();
+    const nextWeekdays = getNextWeekdays(today);
+    const startDate = nextWeekdays[0];
+    const endDate = nextWeekdays[nextWeekdays.length - 1];
+
+    if (hasOrderEmailBeenSent(startDate, endDate)) {
+      logger.info(
+        `次週（${startDate}〜${endDate}）の注文メールは既に送信済みのため、募集アナウンスをスキップします。`
+      );
+      return;
+    }
+
     // 1. 設定からアプリURLを取得
     const config = getConfig();
     if (!config) {
       logger.error('設定の取得に失敗しました。');
       return;
     }
-    
+
     const orderAppUrl = config.orderAppUrl;
     if (!orderAppUrl) {
-      logger.error('注文アプリのURLが設定されていません。スプレッドシート「情報」シートのB10セルを確認してください。');
+      logger.error(
+        '注文アプリのURLが設定されていません。スプレッドシート「情報」シートのB10セルを確認してください。'
+      );
       return;
     }
-    
+
     logger.info(`注文アプリURL: ${orderAppUrl}`);
-    
+
     // 2. メッセージを整形
     const message = formatOrderAnnouncementForSlack(orderAppUrl);
     if (!message) {
@@ -32,10 +47,10 @@ function announceNextWeekOrderToSlack() {
       return;
     }
     logger.debug('整形されたSlackメッセージ:\n' + message);
-    
+
     // 3. Slackに投稿
     const result = sendToSlack(message);
-    
+
     if (Result.isSuccess(result)) {
       logger.info('✅ 注文募集アナウンスをSlackに投稿しました。');
     } else {
@@ -62,6 +77,17 @@ function notifyLunchOrdersToSlack() {
       return;
     }
     logger.info(`次週の営業日: ${nextWeekdays.join(', ')}`);
+
+    // 1.5 次週の注文メールが送信済みかチェック
+    const startDate = nextWeekdays[0];
+    const endDate = nextWeekdays[nextWeekdays.length - 1];
+
+    if (hasOrderEmailBeenSent(startDate, endDate)) {
+      logger.info(
+        `次週（${startDate}〜${endDate}）の注文メールは既に送信済みのため、注文状況の通知をスキップします。`
+      );
+      return;
+    }
 
     // 2. 注文データを取得
     const orders = getLunchOrdersForNextWeek(nextWeekdays);

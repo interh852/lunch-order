@@ -17,7 +17,7 @@ class Result {
     return {
       success: true,
       data: data,
-      message: message
+      message: message,
     };
   }
 
@@ -32,7 +32,7 @@ class Result {
     return {
       success: false,
       error: errorMessage,
-      data: data
+      data: data,
     };
   }
 
@@ -83,15 +83,15 @@ class Result {
 /**
  * 複数のResult結果を結合する
  * 1つでも失敗があれば失敗として扱い、全てのエラーを収集する
- * 
+ *
  * @param {Array<Object>} results Resultオブジェクトの配列
  * @returns {{success: boolean, data: Array, errors: Array<string>}} 結合された結果
  */
 function combineResults(results) {
   const errors = [];
   const dataList = [];
-  
-  results.forEach(result => {
+
+  results.forEach((result) => {
     if (Result.isFailure(result)) {
       errors.push(result.error);
     }
@@ -99,17 +99,17 @@ function combineResults(results) {
       dataList.push(result.data);
     }
   });
-  
+
   return {
     success: errors.length === 0,
     data: dataList,
-    errors: errors
+    errors: errors,
   };
 }
 
 /**
  * 従来のboolean戻り値をResultオブジェクトに変換する
- * 
+ *
  * @param {boolean} booleanResult boolean型の結果
  * @param {*} successData 成功時のデータ
  * @param {string} failureMessage 失敗時のメッセージ
@@ -125,7 +125,7 @@ function booleanToResult(booleanResult, successData = null, failureMessage = '�
 
 /**
  * Resultオブジェクトを従来のboolean戻り値に変換する
- * 
+ *
  * @param {Object} result Resultオブジェクト
  * @returns {boolean} 成功時true、失敗時false
  */
@@ -139,13 +139,13 @@ function resultToBoolean(result) {
 
 /**
  * 使用例1: データ取得関数
- * 
+ *
  * 従来の書き方:
  * function getUser(id) {
  *   if (!id) return null;
  *   return { id: id, name: 'User' };
  * }
- * 
+ *
  * Result型を使った書き方:
  * function getUser(id) {
  *   if (!id) {
@@ -154,7 +154,7 @@ function resultToBoolean(result) {
  *   const user = { id: id, name: 'User' };
  *   return Result.success(user, 'ユーザーを取得しました');
  * }
- * 
+ *
  * 呼び出し側:
  * const result = getUser(123);
  * if (Result.isSuccess(result)) {
@@ -166,7 +166,7 @@ function resultToBoolean(result) {
 
 /**
  * 使用例2: boolean戻り値の関数
- * 
+ *
  * 従来の書き方:
  * function saveData(data) {
  *   try {
@@ -177,7 +177,7 @@ function resultToBoolean(result) {
  *     return false;
  *   }
  * }
- * 
+ *
  * Result型を使った書き方:
  * function saveData(data) {
  *   try {
@@ -187,7 +187,7 @@ function resultToBoolean(result) {
  *     return Result.failure(e);
  *   }
  * }
- * 
+ *
  * 既存コードとの互換性維持:
  * const result = saveData(data);
  * const success = resultToBoolean(result); // boolean に変換
@@ -195,13 +195,13 @@ function resultToBoolean(result) {
 
 /**
  * 使用例3: 複数の処理結果を結合
- * 
+ *
  * const results = [
  *   processFile('file1.pdf'),
  *   processFile('file2.pdf'),
  *   processFile('file3.pdf')
  * ];
- * 
+ *
  * const combined = combineResults(results);
  * if (combined.success) {
  *   console.log(`${combined.data.length}件の処理が成功しました`);

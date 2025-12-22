@@ -43,7 +43,7 @@ class SpreadsheetService {
   writeData(sheetName, data, startRow = null, startColumn = 1) {
     try {
       const sheet = this.getSheet(sheetName);
-      
+
       if (!data || data.length === 0) {
         return Result.success(0, 'データがないためスキップしました');
       }
@@ -59,6 +59,26 @@ class SpreadsheetService {
     } catch (e) {
       handleError(e, 'SpreadsheetService.writeData');
       return Result.failure(e, 0);
+    }
+  }
+
+  /**
+   * 指定範囲のコンテンツをクリア
+   * @param {string} sheetName シート名
+   * @param {number} startRow 開始行
+   * @param {number} startColumn 開始列
+   * @param {number} numRows 行数
+   * @param {number} numColumns 列数
+   * @returns {Object} Result型のオブジェクト
+   */
+  clearRange(sheetName, startRow, startColumn, numRows, numColumns) {
+    try {
+      const sheet = this.getSheet(sheetName);
+      sheet.getRange(startRow, startColumn, numRows, numColumns).clearContent();
+      return Result.success(true, '範囲をクリアしました');
+    } catch (e) {
+      handleError(e, 'SpreadsheetService.clearRange');
+      return Result.failure(e, false);
     }
   }
 
@@ -80,7 +100,7 @@ class SpreadsheetService {
         return Result.success([], 'データがありません');
       }
 
-      const actualNumRows = numRows !== null ? numRows : (lastRow - startRow + 1);
+      const actualNumRows = numRows !== null ? numRows : lastRow - startRow + 1;
       const actualNumColumns = numColumns !== null ? numColumns : sheet.getLastColumn();
 
       const range = sheet.getRange(startRow, startColumn, actualNumRows, actualNumColumns);
