@@ -661,9 +661,62 @@ function debugHasMenuForRange() {
     const hasMenuFuture = hasMenuForRange(futureWeekdays);
     logger.info(hasMenuFuture ? '✅ メニューあり' : '❌ メニューなし (期待通り)');
     
-    logger.info('\n=== テスト完了 ===');
+        logger.info('\n=== テスト完了 ===');
     
-  } catch (e) {
-    handleError(e, 'debugHasMenuForRange');
-  }
-}
+        
+    
+      } catch (e) {
+    
+        handleError(e, 'debugHasMenuForRange');
+    
+      }
+    
+    }
+    
+    
+    
+    /**
+    
+     * メニューなしの場合の週次注文処理スキップテスト（デバッグ用）
+    
+     * 
+    
+     * 注意: このテストを完全に自動化するには、内部の Date を制御する必要がありますが、
+    
+     * ここでは「メニューがない期間」であることを前提として、
+    
+     * processWeeklyOrdersAndCreateDraft が正しくスキップするかをログで確認するためのものです。
+    
+     */
+    
+    function debugProcessWeeklyOrdersWithNoMenu() {
+    
+      const logger = getContextLogger('debugProcessWeeklyOrdersWithNoMenu');
+    
+      logger.info('=== 週次注文処理スキップテスト（メニューなし） ===');
+    
+      
+    
+      try {
+    
+        logger.info('※このテストは、現在の次週（月〜金）のメニューが登録されていない状態で実行してください。');
+    
+        logger.info('処理を開始します...');
+    
+        
+    
+        processWeeklyOrdersAndCreateDraft();
+    
+        
+    
+        logger.info('処理が終了しました。ログを確認して「メニューが登録されていないためスキップ」と出ているか確認してください。');
+    
+      } catch (e) {
+    
+        handleError(e, 'debugProcessWeeklyOrdersWithNoMenu');
+    
+      }
+    
+    }
+    
+    

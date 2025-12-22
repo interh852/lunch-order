@@ -10,6 +10,13 @@ function processWeeklyOrdersAndCreateDraft() {
   const logger = getContextLogger('processWeeklyOrdersAndCreateDraft');
   
   try {
+    // 次週の平日を取得して、メニューがあるか確認
+    const nextWeekdays = getNextWeekdays(new Date());
+    if (!hasMenuForRange(nextWeekdays)) {
+      logger.info('対象期間のメニューが登録されていないため、週次注文処理をスキップしました。');
+      return;
+    }
+
     // 1. オーダーカードに転記（差分も取得）
     const result = writeOrdersToOrderCard();
     
