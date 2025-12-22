@@ -634,3 +634,36 @@ function debugNotifyChanges() {
     handleError(e, 'debugNotifyChanges');
   }
 }
+
+/**
+ * メニュー存在確認のテスト（デバッグ用）
+ */
+function debugHasMenuForRange() {
+  const logger = getContextLogger('debugHasMenuForRange');
+  logger.info('=== メニュー存在確認テスト ===');
+  
+  try {
+    // JSの月は0から始まるため、12月は11を指定する
+    const today = new Date(2025, 11, 17);
+    logger.info(`基準日: ${today.toLocaleDateString('ja-JP')}`);
+    
+    // パターン1: 次週（通常存在するはず）
+    const nextWeekdays = getNextWeekdays(today);
+    logger.info(`\n1. 次週 (${nextWeekdays[0]}〜${nextWeekdays[nextWeekdays.length-1]}) のチェック:`);
+    const hasMenuNextWeek = hasMenuForRange(nextWeekdays);
+    logger.info(hasMenuNextWeek ? '✅ メニューあり' : '❌ メニューなし');
+    
+    // パターン2: 遠い未来（存在しないはず）
+    const futureDate = new Date();
+    futureDate.setFullYear(futureDate.getFullYear() + 1); // 1年後
+    const futureWeekdays = getNextWeekdays(futureDate);
+    logger.info(`\n2. 1年後 (${futureWeekdays[0]}〜${futureWeekdays[futureWeekdays.length-1]}) のチェック:`);
+    const hasMenuFuture = hasMenuForRange(futureWeekdays);
+    logger.info(hasMenuFuture ? '✅ メニューあり' : '❌ メニューなし (期待通り)');
+    
+    logger.info('\n=== テスト完了 ===');
+    
+  } catch (e) {
+    handleError(e, 'debugHasMenuForRange');
+  }
+}

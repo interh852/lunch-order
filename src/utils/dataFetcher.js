@@ -3,6 +3,46 @@
  */
 
 /**
+ * 指定された期間内にメニューデータが存在するか確認します。
+ * 
+ * @param {string[]} dateStrings YYYY/MM/DD形式の日付文字列の配列。
+ * @returns {boolean} メニューが存在すればtrue、存在しなければfalse。
+ */
+function hasMenuForRange(dateStrings) {
+  const logger = getContextLogger('hasMenuForRange');
+  try {
+    const spreadsheetService = getSpreadsheetService();
+    const readResult = spreadsheetService.readData(MENU_SHEET_NAME);
+    
+    if (Result.isFailure(readResult)) {
+      logger.error('メニューデータの読み込みに失敗しました。');
+      return false;
+    }
+    
+    const values = readResult.data;
+    if (values.length === 0) {
+      logger.debug('「メニュー」シートにデータがありません。');
+      return false;
+    }
+
+    // 「メニュー」シートの日付列をスキャンして、対象の日付が1つでも存在するかチェック
+    return dateStrings.some(targetDateStr => {
+      return values.some(row => {
+        const menuDate = row[MENU_COLUMNS.DATE];
+        if (menuDate instanceof Date) {
+          const menuDateStr = Utilities.formatDate(menuDate, Session.getScriptTimeZone(), DATE_FORMATS.YYYY_MM_DD_SLASH);
+          return menuDateStr === targetDateStr;
+        }
+        return false;
+      });
+    });
+  } catch (e) {
+    handleError(e, 'hasMenuForRange');
+    return false;
+  }
+}
+
+/**
  * 次週のランチ注文データをスプレッドシートから取得します。
  *
  * スプレッドシートの「注文履歴」シートから、指定された日付範囲に一致する注文データを抽出します。
