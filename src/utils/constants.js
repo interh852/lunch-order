@@ -36,6 +36,8 @@ const CELL_ADDRESSES = {
   PRICE_RANGE_1_8: 'B13',
   PRICE_RANGE_9_13: 'B14',
   PRICE_RANGE_14_PLUS: 'B15',
+  GMAIL_QUERY_INVOICE: 'B16',
+  INVOICE_PROMPT: 'B17',
 };
 
 // オーダーカード初期化用のセルアドレス

@@ -707,3 +707,81 @@ function debugProcessWeeklyOrdersWithNoMenu() {
     handleError(e, 'debugProcessWeeklyOrdersWithNoMenu');
   }
 }
+
+/**
+ * 請求書処理のテスト（デバッグ用）
+ * Gemini APIによる解析テストと、Gmail検索の確認を行います
+ */
+function testInvoiceProcessing() {
+  const logger = getContextLogger('testInvoiceProcessing');
+  logger.info('=== 請求書処理テスト開始 ===');
+
+  try {
+    const config = getConfig();
+    if (!config) {
+      logger.error('設定の取得に失敗しました');
+      return;
+    }
+
+    // 1. Gmail検索テスト
+    logger.info(`\n🔍 Gmail検索テスト (クエリ: ${config.gmailQueryInvoice})`);
+    const threads = GmailApp.search(config.gmailQueryInvoice);
+    logger.info(`ヒット件数: ${threads.length}件`);
+
+    if (threads.length > 0) {
+      // 直近30日以内のメッセージを探す
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      
+      let targetMessage = null;
+      let targetPdf = null;
+
+      // 最新のスレッドから順に探す
+      for (const thread of threads) {
+        const messages = thread.getMessages();
+        // スレッド内の新しいメッセージから順にチェック
+        for (let i = messages.length - 1; i >= 0; i--) {
+          const msg = messages[i];
+          if (msg.getDate() >= thirtyDaysAgo) {
+            const attachments = msg.getAttachments();
+            const pdf = attachments.find(a => a.getContentType() === MIME_TYPES.PDF);
+            if (pdf) {
+              targetMessage = msg;
+              targetPdf = pdf;
+              break;
+            }
+          }
+        }
+        if (targetMessage) break;
+      }
+
+      if (targetMessage && targetPdf) {
+        logger.info(`最新の対象メール: ${targetMessage.getSubject()} (${targetMessage.getDate()})`);
+        logger.info(`\n📄 PDFが見つかりました: ${targetPdf.getName()}`);
+        logger.info('Gemini APIで解析を試みます...');
+        
+        const mockFile = {
+          getName: () => targetPdf.getName(),
+          getBlob: () => targetPdf.copyBlob()
+        };
+
+        const result = analyzeInvoicePdf(mockFile);
+        if (result) {
+          logger.info('✅ 解析成功！');
+          logger.info(JSON.stringify(result, null, 2));
+        } else {
+          logger.error('❌ 解析失敗');
+        }
+      } else {
+        logger.info('⚠️ 直近30日以内にPDF添付付きの対象メールが見つかりませんでした。');
+      }
+    } else {
+      logger.info('⚠️ テスト対象のメールが見つかりませんでした。');
+    }
+
+  } catch (e) {
+    handleError(e, 'testInvoiceProcessing');
+  }
+  
+  logger.info('\n=== テスト完了 ===');
+}
