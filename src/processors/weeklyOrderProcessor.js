@@ -306,7 +306,7 @@ function writeAggregatedOrdersToSpreadsheet(spreadsheet, aggregatedOrders, dateS
     // 日付文字列から週番号を計算（何週目か）
     const firstDateStr = dateStrings[0];
     const firstDate = new Date(firstDateStr);
-    const weekNumber = Math.ceil(firstDate.getDate() / 7); // 1〜5週目
+    const weekNumber = getWeekNumberInMonth(firstDate);
 
     logger.info(`書き込み対象: ${weekNumber}週目`);
 

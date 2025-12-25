@@ -97,3 +97,19 @@ function formatDateToYYYYMMDD(date) {
   const day = formatToTwoDigits(date.getDate());
   return `${year}/${month}/${day}`;
 }
+
+/**
+ * 指定された日付がその月の第何週目かを計算します。
+ * 日曜日始まりのカレンダーを基準とします。
+ *
+ * 例: 2025年1月1日(水) -> 第1週
+ *     2025年1月6日(月) -> 第2週
+ *
+ * @param {Date} date 対象の日付
+ * @returns {number} 週番号 (1〜)
+ */
+function getWeekNumberInMonth(date) {
+  const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+  const offset = firstDayOfMonth.getDay(); // 0:Sun, ... 6:Sat
+  return Math.ceil((date.getDate() + offset) / 7);
+}
