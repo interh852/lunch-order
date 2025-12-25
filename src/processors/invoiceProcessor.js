@@ -55,8 +55,8 @@ function processInvoices() {
             const analysisResult = analyzeInvoicePdf(file);
             if (analysisResult) {
               logger.info('解析結果:', JSON.stringify(analysisResult));
-              // TODO: Phase 3 で実装する照合・通知ロジックへ連携
-              // reconcileInvoiceWithHistory(analysisResult, file);
+              // Phase 3 実装済み: 照合・通知ロジックへ連携
+              reconcileAndProcessInvoice(analysisResult, file);
             }
           }
         });
