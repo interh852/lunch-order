@@ -1,10 +1,10 @@
 /**
  * 週次注文処理プロセッサー
- * 次週の注文内容を集計してオーダーカードに転記し、Gmail下書きを作成する
+ * 次回の注文内容を集計してオーダーカードに転記し、Gmail下書きを作成する
  */
 
 /**
- * 次週の注文内容を集計してオーダーカードに転記し、Gmail下書きを作成する
+ * 次回の注文内容を集計してオーダーカードに転記し、Gmail下書きを作成する
  */
 function processWeeklyOrdersAndCreateDraft() {
   const logger = getContextLogger('processWeeklyOrdersAndCreateDraft');
@@ -126,10 +126,10 @@ function processWeeklyOrdersAndCreateDraft() {
 }
 
 /**
- * 次週の注文内容を集計してオーダーカードに転記する
+ * 次回の注文内容を集計してオーダーカードに転記する
  * オーダーカードフォルダから最新のスプレッドシートを取得し、
- * 注文履歴から次週分の注文を日付×サイズで集計して書き込みます
- * @param {string[]} nextWeekdays - YYYY/MM/DD形式の次週の日付文字列の配列
+ * 注文履歴から次回分の注文を日付×サイズで集計して書き込みます
+ * @param {string[]} nextWeekdays - YYYY/MM/DD形式の次回の日付文字列の配列
  * @returns {Object} 変更情報（差分データ）を含むオブジェクト
  */
 function writeOrdersToOrderCard(nextWeekdays) {
@@ -140,11 +140,11 @@ function writeOrdersToOrderCard(nextWeekdays) {
     // 引数で渡された nextWeekdays を使用
     logger.info(`対象期間: ${nextWeekdays[0]} 〜 ${nextWeekdays[nextWeekdays.length - 1]}`);
 
-    // 2. 次週の注文内容を取得
+    // 2. 次回の注文内容を取得
     const orders = getLunchOrdersForNextWeek(nextWeekdays);
 
     if (orders.length === 0) {
-      logger.warn('次週の注文データがありません。');
+      logger.warn('次回の注文データがありません。');
       return {
         hasOrders: false,
         changes: {},
@@ -156,7 +156,7 @@ function writeOrdersToOrderCard(nextWeekdays) {
     const aggregatedOrders = aggregateOrdersByDateAndSize(orders);
     logger.debug('集計結果:', JSON.stringify(aggregatedOrders, null, 2));
 
-    // 4. 次週の日付文字列を月ごとにグループ化
+    // 4. 次回の日付文字列を月ごとにグループ化
     const datesByMonth = groupDateStringsByMonth(nextWeekdays);
     logger.info(`対象月数: ${Object.keys(datesByMonth).length}ヶ月`);
 
@@ -306,7 +306,7 @@ function writeAggregatedOrdersToSpreadsheet(spreadsheet, aggregatedOrders, dateS
     // 日付文字列から週番号を計算（何週目か）
     const firstDateStr = dateStrings[0];
     const firstDate = new Date(firstDateStr);
-    const weekNumber = Math.ceil(firstDate.getDate() / 7); // 1〜5週目
+    const weekNumber = getWeekNumberInMonth(firstDate);
 
     logger.info(`書き込み対象: ${weekNumber}週目`);
 

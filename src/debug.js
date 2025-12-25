@@ -98,7 +98,7 @@ function testGeminiConnection() {
 }
 
 /**
- * 次週の注文募集アナウンスのテスト
+ * 次回の注文募集アナウンスのテスト
  * 実際にSlackに投稿して動作確認を行います
  */
 function testOrderAnnouncement() {
@@ -437,11 +437,11 @@ function debugLoadSnapshot() {
 // ========================================
 
 /**
- * 今週・次週の平日取得テスト（デバッグ用）
+ * 今週・次回の平日取得テスト（デバッグ用）
  */
 function debugGetWeekdays() {
   const logger = getContextLogger('debugGetWeekdays');
-  logger.info('=== 今週・次週の平日取得テスト ===');
+  logger.info('=== 今週・次回の平日取得テスト ===');
 
   try {
     const today = new Date();
@@ -454,9 +454,9 @@ function debugGetWeekdays() {
       logger.info(`  - ${date} (${formatJapaneseDateWithDay(date)})`);
     });
 
-    // 次週の平日
+    // 次回の平日
     const nextWeekdays = getNextWeekdays(today);
-    logger.info(`\n📅 次週の平日 (${nextWeekdays.length}日):`);
+    logger.info(`\n📅 次回の平日 (${nextWeekdays.length}日):`);
     nextWeekdays.forEach((date) => {
       logger.info(`  - ${date} (${formatJapaneseDateWithDay(date)})`);
     });
@@ -485,9 +485,9 @@ function debugGmailSearch() {
     const currentSent = hasOrderEmailBeenSent(currentWeekdays[0], currentWeekdays[4]);
     logger.info(currentSent ? '✅ 送信済み' : '❌ 未送信');
 
-    // 次週のオーダー送信確認
+    // 次回のオーダー送信確認
     const nextWeekdays = getNextWeekdays(today);
-    logger.info(`\n🔍 次週のオーダー送信確認: ${nextWeekdays[0]}〜${nextWeekdays[4]}`);
+    logger.info(`\n🔍 次回のオーダー送信確認: ${nextWeekdays[0]}〜${nextWeekdays[4]}`);
     const nextSent = hasOrderEmailBeenSent(nextWeekdays[0], nextWeekdays[4]);
     logger.info(nextSent ? '✅ 送信済み' : '❌ 未送信');
 
@@ -511,9 +511,9 @@ function debugDetectChanges() {
   try {
     const today = new Date();
 
-    // 次週の変更検知をテスト
+    // 次回の変更検知をテスト
     const nextWeekdays = getNextWeekdays(today);
-    logger.info(`\n📅 対象期間（次週）: ${nextWeekdays[0]}〜${nextWeekdays[4]}`);
+    logger.info(`\n📅 対象期間（次回）: ${nextWeekdays[0]}〜${nextWeekdays[4]}`);
 
     const result = detectChangesForWeek(nextWeekdays, 'next');
 
@@ -619,7 +619,7 @@ function debugNotifyChanges() {
     };
 
     logger.info('\n📊 テストデータ:');
-    logger.info(`週タイプ: ${testChangeResult.weekType === 'current' ? '今週' : '来週'}`);
+    logger.info(`週タイプ: ${testChangeResult.weekType === 'current' ? '今週' : '次回'}`);
     logger.info(`期間: ${testChangeResult.period.start} - ${testChangeResult.period.end}`);
     logger.info(`追加: ${testChangeResult.changes.added.length}件`);
     logger.info(`キャンセル: ${testChangeResult.changes.cancelled.length}件`);
@@ -648,10 +648,10 @@ function debugHasMenuForRange() {
     const today = new Date(2025, 11, 17);
     logger.info(`基準日: ${today.toLocaleDateString('ja-JP')}`);
 
-    // パターン1: 次週（通常存在するはず）
+    // パターン1: 次回（通常存在するはず）
     const nextWeekdays = getNextWeekdays(today);
     logger.info(
-      `\n1. 次週 (${nextWeekdays[0]}〜${nextWeekdays[nextWeekdays.length - 1]}) のチェック:`
+      `\n1. 次回 (${nextWeekdays[0]}〜${nextWeekdays[nextWeekdays.length - 1]}) のチェック:`
     );
     const hasMenuNextWeek = hasMenuForRange(nextWeekdays);
     logger.info(hasMenuNextWeek ? '✅ メニューあり' : '❌ メニューなし');
@@ -693,7 +693,7 @@ function debugProcessWeeklyOrdersWithNoMenu() {
 
   try {
     logger.info(
-      '※このテストは、現在の次週（月〜金）のメニューが登録されていない状態で実行してください。'
+      '※このテストは、現在の次回（月〜金）のメニューが登録されていない状態で実行してください。'
     );
 
     logger.info('処理を開始します...');

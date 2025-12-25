@@ -123,7 +123,7 @@ function generateEmailSubject(period) {
 function generateEmailBody(recipientEmail, changes, period) {
   const lines = [];
 
-  // 宛名（次週の注文データから店名を取得）
+  // 宛名（次回の注文データから店名を取得）
   const storeName = getStoreNameFromNextWeekOrders() || extractNameFromEmail(recipientEmail);
   lines.push(`${storeName}${EMAIL_TEMPLATES.GREETING}`);
 
@@ -229,7 +229,7 @@ function getStoreNameFromOrders(dateStrings) {
 }
 
 /**
- * 次週の注文データから店名を取得
+ * 次回の注文データから店名を取得
  * @returns {string} 店名（取得できない場合は空文字列）
  */
 function getStoreNameFromNextWeekOrders() {
@@ -373,7 +373,7 @@ function generateChangeEmailBody(recipientEmail, changes, period, weekType) {
   lines.push('');
 
   // 本文
-  const weekLabel = weekType === 'current' ? '今週' : '来週';
+  const weekLabel = weekType === 'current' ? '今週' : '次回';
   lines.push(`${weekLabel}のお弁当注文について、変更がありましたのでご連絡いたします。`);
   lines.push('');
 

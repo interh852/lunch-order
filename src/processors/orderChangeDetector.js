@@ -8,7 +8,7 @@
 // ==========================================
 
 /**
- * メイン処理：今週・次週の注文変更を検知して通知
+ * メイン処理：今週・次回の注文変更を検知して通知
  */
 function detectOrderChangesAndNotify() {
   const logger = getContextLogger('detectOrderChangesAndNotify');
@@ -28,8 +28,8 @@ function detectOrderChangesAndNotify() {
       results.push(currentResult);
     }
 
-    // 2. 次週分の変更検知
-    logger.info('\n【次週分のチェック】');
+    // 2. 次回分の変更検知
+    logger.info('\n【次回分のチェック】');
     const nextWeekdays = getNextWeekdays(today);
     const nextResult = detectChangesForWeek(nextWeekdays, 'next');
     if (nextResult) {
@@ -45,7 +45,7 @@ function detectOrderChangesAndNotify() {
       logger.info('✅ 変更なし、または送信前のため処理をスキップしました。');
     } else {
       results.forEach((result) => {
-        const weekLabel = result.weekType === 'current' ? '今週' : '次週';
+        const weekLabel = result.weekType === 'current' ? '今週' : '次回';
         const addedCount = result.changes.added.length;
         const cancelledCount = result.changes.cancelled.length;
         logger.info(`\n${weekLabel}分: 追加${addedCount}件 / キャンセル${cancelledCount}件`);
@@ -83,7 +83,7 @@ function detectChangesForWeek(weekdays, weekType) {
     const periodKey = generatePeriodKey(startDate, endDate);
 
     logger.info(
-      `=== ${weekType === 'current' ? '今週' : '次週'}の変更検知開始: ${startDate}〜${endDate} ===`
+      `=== ${weekType === 'current' ? '今週' : '次回'}の変更検知開始: ${startDate}〜${endDate} ===`
     );
 
     // 1. オーダー送信済みかチェック
@@ -105,12 +105,12 @@ function detectChangesForWeek(weekdays, weekType) {
 
     // 5. 変更がなければ終了
     if (!hasChanges(changes)) {
-      logger.info(`${weekType === 'current' ? '今週' : '次週'}の注文に変更はありません。`);
+      logger.info(`${weekType === 'current' ? '今週' : '次回'}の注文に変更はありません。`);
       return null;
     }
 
     logger.info(
-      `${weekType === 'current' ? '今週' : '次週'}の変更検知: 追加${changes.added.length}件, キャンセル${changes.cancelled.length}件`
+      `${weekType === 'current' ? '今週' : '次回'}の変更検知: 追加${changes.added.length}件, キャンセル${changes.cancelled.length}件`
     );
 
     // 6. オーダーカードを更新
@@ -407,7 +407,7 @@ function shouldDetectChanges(weekdays, weekType) {
 
   const isSent = hasOrderEmailBeenSent(startDate, endDate);
   if (!isSent) {
-    logger.info(`${weekType === 'current' ? '今週' : '次週'}のオーダーはまだ送信されていません。`);
+    logger.info(`${weekType === 'current' ? '今週' : '次回'}のオーダーはまだ送信されていません。`);
     return false;
   }
 

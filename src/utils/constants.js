@@ -211,7 +211,7 @@ const GMAIL_SEARCH = {
 const EMAIL_TEMPLATES = {
   SUBJECT_PREFIX: 'のお弁当について',
   GREETING: '様\n\nいつもお世話になります。',
-  BODY_MAIN: '来週のお弁当のオーダーカードを添付の通り送付させて頂きます。',
+  BODY_MAIN: '次回のお弁当のオーダーカードを添付の通り送付させて頂きます。',
   CLOSING: '以上、よろしくお願いいたします。',
 };
 

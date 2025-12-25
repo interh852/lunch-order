@@ -3,22 +3,51 @@
  */
 
 /**
- * 次週の注文募集アナウンスをSlackに投稿する
+ * 次回の注文募集アナウンスをSlackに投稿する
  */
 function announceNextWeekOrderToSlack() {
   const logger = getContextLogger('announceNextWeekOrderToSlack');
-  logger.info('次週の注文募集アナウンスを開始します。');
+  logger.info('次回の注文募集アナウンスを開始します。');
 
   try {
-    // 0. 次週の注文メールが送信済みかチェック
-    const today = new Date();
-    const nextWeekdays = getNextWeekdays(today);
+    // 0. 次回の日付範囲を取得（メニューがある週を探索）
+    let targetBaseDate = new Date();
+    let nextWeekdays = getNextWeekdays(targetBaseDate);
+
+    // メニューが存在する週が見つかるまで、最大4週間先まで探索する
+    let weeksChecked = 0;
+    const MAX_WEEKS_AHEAD = 4;
+    let menuFound = false;
+
+    while (weeksChecked < MAX_WEEKS_AHEAD) {
+      if (hasMenuForRange(nextWeekdays)) {
+        menuFound = true;
+        break;
+      }
+
+      logger.info(
+        `期間 ${nextWeekdays[0]} 〜 ${nextWeekdays[nextWeekdays.length - 1]} のメニューが登録されていないため、翌週をチェックします。`
+      );
+
+      // 1週間進める
+      targetBaseDate.setDate(targetBaseDate.getDate() + 7);
+      nextWeekdays = getNextWeekdays(targetBaseDate);
+      weeksChecked++;
+    }
+
+    if (!menuFound) {
+      logger.warn(
+        `直近${MAX_WEEKS_AHEAD}週間分のメニューが見つからなかったため、募集アナウンスをスキップしました。`
+      );
+      return;
+    }
+
     const startDate = nextWeekdays[0];
     const endDate = nextWeekdays[nextWeekdays.length - 1];
 
     if (hasOrderEmailBeenSent(startDate, endDate)) {
       logger.info(
-        `次週（${startDate}〜${endDate}）の注文メールは既に送信済みのため、募集アナウンスをスキップします。`
+        `期間（${startDate}〜${endDate}）の注文メールは既に送信済みのため、募集アナウンスをスキップします。`
       );
       return;
     }
@@ -62,29 +91,58 @@ function announceNextWeekOrderToSlack() {
 }
 
 /**
- * 次週のランチ注文状況をSlackに通知するメイン処理関数
+ * 次回のランチ注文状況をSlackに通知するメイン処理関数
  */
 function notifyLunchOrdersToSlack() {
   const logger = getContextLogger('notifyLunchOrdersToSlack');
   logger.info('ランチ注文状況のSlack通知処理を開始します。');
 
   try {
-    // 1. 次週の日付範囲を取得
-    const today = new Date();
-    const nextWeekdays = getNextWeekdays(today);
-    if (!nextWeekdays || nextWeekdays.length === 0) {
-      logger.warn('次週の営業日を取得できませんでした。処理を終了します。');
+    // 1. 次回の日付範囲を取得（メニューがある週を探索）
+    let targetBaseDate = new Date();
+    let nextWeekdays = getNextWeekdays(targetBaseDate);
+
+    // メニューが存在する週が見つかるまで、最大4週間先まで探索する
+    let weeksChecked = 0;
+    const MAX_WEEKS_AHEAD = 4;
+    let menuFound = false;
+
+    while (weeksChecked < MAX_WEEKS_AHEAD) {
+      if (hasMenuForRange(nextWeekdays)) {
+        menuFound = true;
+        break;
+      }
+
+      logger.info(
+        `期間 ${nextWeekdays[0]} 〜 ${nextWeekdays[nextWeekdays.length - 1]} のメニューが登録されていないため、翌週をチェックします。`
+      );
+
+      // 1週間進める
+      targetBaseDate.setDate(targetBaseDate.getDate() + 7);
+      nextWeekdays = getNextWeekdays(targetBaseDate);
+      weeksChecked++;
+    }
+
+    if (!menuFound) {
+      logger.warn(
+        `直近${MAX_WEEKS_AHEAD}週間分のメニューが見つからなかったため、注文状況の通知をスキップしました。`
+      );
       return;
     }
-    logger.info(`次週の営業日: ${nextWeekdays.join(', ')}`);
 
-    // 1.5 次週の注文メールが送信済みかチェック
+    if (!nextWeekdays || nextWeekdays.length === 0) {
+      logger.warn('営業日を取得できませんでした。処理を終了します。');
+      return;
+    }
+    logger.info(`通知対象の営業日: ${nextWeekdays.join(', ')}`);
+
+    // 1.5 対象期間の注文メールが送信済みかチェック
     const startDate = nextWeekdays[0];
     const endDate = nextWeekdays[nextWeekdays.length - 1];
 
     if (hasOrderEmailBeenSent(startDate, endDate)) {
       logger.info(
-        `次週（${startDate}〜${endDate}）の注文メールは既に送信済みのため、注文状況の通知をスキップします。`
+        `期間（${startDate}〜${endDate}）の注文メールは既に送信済みのため、注文状況の通知をスキップします。`
       );
       return;
     }
