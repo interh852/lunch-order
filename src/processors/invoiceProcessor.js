@@ -19,8 +19,9 @@ function processInvoices() {
 
     // 1. 請求書メールの検索
     const threads = GmailApp.search(config.gmailQueryInvoice);
+    
     if (threads.length === 0) {
-      logger.info('該当する請求書メールは見つかりませんでした。');
+      logger.info('本日対象となる請求書メールは見つかりませんでした。');
       return;
     }
 
@@ -29,13 +30,13 @@ function processInvoices() {
     const folder = DriveApp.getFolderById(invoiceFolderId);
 
     const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     threads.forEach((thread) => {
       const messages = thread.getMessages();
       messages.forEach((message) => {
         // メッセージの日付が古い場合はスキップ
-        if (message.getDate() < thirtyDaysAgo) {
+        if (message.getDate() < oneDayAgo) {
           return;
         }
 
