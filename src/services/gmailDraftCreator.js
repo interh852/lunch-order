@@ -91,6 +91,56 @@ function createOrderChangeEmailDraft(recipientEmail, period, changes, attachment
   }
 }
 
+/**
+ * 請求書申請用のメール下書きを作成
+ * @param {string} recipientEmail - 宛先メールアドレス
+ * @param {Object} invoiceData - 請求書データ {targetMonth, totalCount, totalAmount}
+ * @param {GoogleAppsScript.Base.Blob} pdfBlob - 請求書PDFのBlob
+ * @param {string} recipientName - 宛先担当者名
+ * @returns {GoogleAppsScript.Gmail.GmailDraft|null} 作成された下書き
+ */
+function createInvoiceEmailDraft(recipientEmail, invoiceData, pdfBlob, recipientName) {
+  const logger = getContextLogger('createInvoiceEmailDraft');
+
+  try {
+    // 件名を生成
+    const subject = `【お弁当代申請】${invoiceData.targetMonth}分請求書`;
+
+    // 送信者名を取得
+    const senderName =
+      getSenderNameFromPromptSheet() || extractNameFromEmail(Session.getActiveUser().getEmail());
+
+    // 本文を生成
+    const body = `${recipientName}様\n\n` +
+      `お疲れ様です。\n` +
+      `${senderName}です。\n\n` +
+      `${invoiceData.targetMonth}分のお弁当代の請求書を受領しましたので、申請いたします。\n\n` +
+      `■請求内容\n` +
+      `- 対象月: ${invoiceData.targetMonth}\n` +
+      `- 合計個数: ${invoiceData.totalCount}個\n` +
+      `- 請求金額: ${invoiceData.totalAmount.toLocaleString()}円\n\n` +
+      `請求書PDFを添付しております。\n` +
+      `ご確認のほど、よろしくお願いいたします。`;
+
+    logger.info(`請求書申請メール下書き作成: 宛先=${recipientEmail}, 件名=${subject}`);
+
+    // 下書きを作成
+    const draftOptions = {
+      attachments: [pdfBlob],
+      name: senderName,
+    };
+
+    const draft = GmailApp.createDraft(recipientEmail, subject, body, draftOptions);
+
+    logger.info('請求書申請メール下書きを作成しました。');
+
+    return draft;
+  } catch (e) {
+    handleError(e, 'createInvoiceEmailDraft');
+    return null;
+  }
+}
+
 // ==========================================
 // ヘルパー関数（内部実装）
 // ==========================================

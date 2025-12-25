@@ -168,24 +168,13 @@ function createInvoiceApplicationDraft(invoiceData, pdfFile) {
   const config = getConfig();
 
   try {
-    const recipient = config.generalAffairs.email;
-    const subject = `【お弁当代申請】${invoiceData.targetMonth}分請求書`;
-    
-    const body = `${config.generalAffairs.name}様\n\n` +
-      `お疲れ様です。\n` +
-      `${invoiceData.targetMonth}分のお弁当代の請求書を受領しましたので、申請いたします。\n\n` +
-      `■請求内容\n` +
-      `- 対象月: ${invoiceData.targetMonth}\n` +
-      `- 合計個数: ${invoiceData.totalCount}個\n` +
-      `- 請求金額: ${invoiceData.totalAmount.toLocaleString()}円\n\n` +
-      `請求書PDFを添付しております。\n` +
-      `ご確認のほど、よろしくお願いいたします。`;
+    const recipientEmail = config.generalAffairs.email;
+    const recipientName = config.generalAffairs.name;
+    const pdfBlob = pdfFile.getBlob();
 
-    GmailApp.createDraft(recipient, subject, body, {
-      attachments: [pdfFile.getBlob()]
-    });
+    createInvoiceEmailDraft(recipientEmail, invoiceData, pdfBlob, recipientName);
 
-    logger.info(`Gmail下書きを作成しました: ${subject}`);
+    logger.info(`Gmail下書き作成完了: 宛先=${recipientEmail}`);
 
   } catch (e) {
     handleError(e, 'createInvoiceApplicationDraft');
