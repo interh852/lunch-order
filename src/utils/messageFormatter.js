@@ -3,12 +3,12 @@
  */
 
 /**
- * 次週の注文募集アナウンスをSlack通知用に整形
+ * 次回の注文募集アナウンスをSlack通知用に整形
  * @param {string} orderAppUrl - 注文アプリのURL
  * @returns {string} Slackメッセージ
  */
 function formatOrderAnnouncementForSlack(orderAppUrl) {
-  return `<!channel> 来週のお弁当の注文を受け付けます\nアプリに記入をお願いします\n${orderAppUrl}`;
+  return `<!channel> 次回のお弁当の注文を受け付けます\nアプリに記入をお願いします\n${orderAppUrl}`;
 }
 
 /**
@@ -59,7 +59,7 @@ function formatOrderChangesForSlack(changes, weekType, detectedAt) {
  */
 function formatLunchOrdersForSlack(orders) {
   if (!orders || orders.length === 0) {
-    return '【来週の弁当注文状況🍱】\n来週の弁当注文はありませんでした。';
+    return '【次回の弁当注文状況🍱】\n次回の弁当注文はありませんでした。';
   }
 
   // 日付ごとに注文をグループ化
@@ -72,7 +72,7 @@ function formatLunchOrdersForSlack(orders) {
     return acc;
   }, {});
 
-  let message = '【来週の弁当注文状況🍱】\n';
+  let message = '【次回の弁当注文状況🍱】\n';
 
   // 日付でソートしてメッセージに追加
   Object.keys(groupedOrders)

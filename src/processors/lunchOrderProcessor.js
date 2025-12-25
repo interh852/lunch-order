@@ -3,14 +3,14 @@
  */
 
 /**
- * 次週の注文募集アナウンスをSlackに投稿する
+ * 次回の注文募集アナウンスをSlackに投稿する
  */
 function announceNextWeekOrderToSlack() {
   const logger = getContextLogger('announceNextWeekOrderToSlack');
-  logger.info('次週の注文募集アナウンスを開始します。');
+  logger.info('次回の注文募集アナウンスを開始します。');
 
   try {
-    // 0. 次週の日付範囲を取得（メニューがある週を探索）
+    // 0. 次回の日付範囲を取得（メニューがある週を探索）
     let targetBaseDate = new Date();
     let nextWeekdays = getNextWeekdays(targetBaseDate);
 
