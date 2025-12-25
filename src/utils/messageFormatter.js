@@ -20,7 +20,7 @@ function formatOrderAnnouncementForSlack(orderAppUrl) {
  */
 function formatOrderChangesForSlack(changes, weekType, detectedAt) {
   const emoji = weekType === 'current' ? '🚨' : '🔄';
-  const weekLabel = weekType === 'current' ? '今週分' : '次週分';
+  const weekLabel = weekType === 'current' ? '今週分' : '次回分';
 
   let message = `${emoji} 【${weekLabel}】注文変更を検知しました（${detectedAt}）\n\n`;
 

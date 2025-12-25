@@ -47,17 +47,10 @@ function hasMenuForRange(dateStrings) {
 }
 
 /**
- * 次週のランチ注文データをスプレッドシートから取得します。
+ * 次回のランチ注文データをスプレッドシートから取得します。
  *
- * スプレッドシートの「注文履歴」シートから、指定された日付範囲に一致する注文データを抽出します。
- * 注文データは「対象日付」、「注文者名」、「サイズ」の形式で取得することを想定しています。
- * 想定される列は以下の通りです（0-indexed）：
- * - 対象日付: 3 (D列)
- * - 注文者名: 2 (C列)
- * - サイズ: 6 (G列)
- *
- * @param {string[]} nextWeekdays YYYY/MM/DD形式の次週の日付文字列の配列。
- * @returns {Array<Object>} 取得した注文データの配列。各オブジェクトは { date: string, name: string, size: string } の形式。
+ * @param {string[]} nextWeekdays YYYY/MM/DD形式の次回の日付文字列の配列。
+ * @returns {Array<Object>|null} 注文データの配列。各オブジェクトは { date: string, name: string, size: string, count: number } の形式。取得に失敗した場合は null。
  */
 function getLunchOrdersForNextWeek(nextWeekdays) {
   const logger = getContextLogger('getLunchOrdersForNextWeek');

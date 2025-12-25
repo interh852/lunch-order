@@ -91,14 +91,14 @@ function announceNextWeekOrderToSlack() {
 }
 
 /**
- * 次週のランチ注文状況をSlackに通知するメイン処理関数
+ * 次回のランチ注文状況をSlackに通知するメイン処理関数
  */
 function notifyLunchOrdersToSlack() {
   const logger = getContextLogger('notifyLunchOrdersToSlack');
   logger.info('ランチ注文状況のSlack通知処理を開始します。');
 
   try {
-    // 1. 次週の日付範囲を取得（メニューがある週を探索）
+    // 1. 次回の日付範囲を取得（メニューがある週を探索）
     let targetBaseDate = new Date();
     let nextWeekdays = getNextWeekdays(targetBaseDate);
 
