@@ -69,6 +69,13 @@ function _loadAndBuildFullConfig() {
     const orderAppUrl = sheet.getRange(ORDER_APP_URL_CELL).getValue();
     const bentoMailAddress = sheet.getRange(C_MAIL_ADRESS_CELL).getValue();
 
+    // 総務担当者情報と単価設定
+    const gaName = sheet.getRange(CELL_ADDRESSES.GENERAL_AFFAIRS_NAME).getValue();
+    const gaEmail = sheet.getRange(CELL_ADDRESSES.GENERAL_AFFAIRS_EMAIL).getValue();
+    const price1_8 = sheet.getRange(CELL_ADDRESSES.PRICE_RANGE_1_8).getValue();
+    const price9_13 = sheet.getRange(CELL_ADDRESSES.PRICE_RANGE_9_13).getValue();
+    const price14Plus = sheet.getRange(CELL_ADDRESSES.PRICE_RANGE_14_PLUS).getValue();
+
     // 必須項目のチェック
     if (!geminiPrompt || !gmailQuery || !botToken || !channelId) {
       logger.error(
@@ -87,6 +94,15 @@ function _loadAndBuildFullConfig() {
       slack: {
         botToken: botToken,
         channelId: channelId,
+      },
+      generalAffairs: {
+        name: gaName,
+        email: gaEmail,
+      },
+      prices: {
+        range1_8: price1_8,
+        range9_13: price9_13,
+        range14Plus: price14Plus,
       },
     };
   } catch (e) {
