@@ -294,23 +294,7 @@ function getStoreNameFromNextWeekOrders() {
  */
 function getStoreNameFromPeriod(period) {
   // 期間内のすべての平日を取得
-  const startDate = new Date(period.start);
-  const endDate = new Date(period.end);
-  const dateStrings = [];
-
-  const current = new Date(startDate);
-  while (current <= endDate) {
-    // 土日を除外（0: 日曜, 6: 土曜）
-    const day = current.getDay();
-    if (day !== 0 && day !== 6) {
-      dateStrings.push(
-        Utilities.formatDate(current, Session.getScriptTimeZone(), DATE_FORMATS.YYYY_MM_DD_SLASH)
-      );
-    }
-    // 次の日へ
-    current.setDate(current.getDate() + 1);
-  }
-
+  const dateStrings = getWeekdaysInRange(period.start, period.end);
   return getStoreNameFromOrders(dateStrings);
 }
 

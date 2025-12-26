@@ -353,10 +353,10 @@ function createEmailDraftForChanges(changeResult) {
       logger.error('設定の取得に失敗しました。');
       return;
     }
-    const bentoMailAddress = config.bentoMailAddress;
+    const lunchProviderEmail = config.lunchProviderEmail;
 
-    if (!bentoMailAddress) {
-      logger.error('BENTO_MAIL_ADDRESSが設定されていません。メール下書きの作成をスキップします。');
+    if (!lunchProviderEmail) {
+      logger.error('lunchProviderEmailが設定されていません。メール下書きの作成をスキップします。');
       return;
     }
 
@@ -373,7 +373,7 @@ function createEmailDraftForChanges(changeResult) {
 
     // メール下書きを作成
     const draft = createOrderChangeEmailDraft(
-      bentoMailAddress,
+      lunchProviderEmail,
       changeResult.period,
       changeResult.changes,
       excelAttachments,
