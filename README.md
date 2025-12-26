@@ -9,6 +9,9 @@
 - 次回の弁当注文状況を定期的にSlackへ通知します。
 - 次回の注文内容を日付×サイズで集計し、オーダーカードスプレッドシートに自動転記し、Gmail下書きを作成します。
 - **オーダー送信後の注文変更を自動検知**し、変更内容をSlackに通知するとともに、更新したオーダーカードのGmail下書きを作成します。
+- **請求書の自動処理・照合機能**:
+  - Gmailに届いた請求書PDFを自動保存し、Gemini APIで解析（対象月、個数、金額を抽出）。
+  - システム上の注文履歴と照合し、一致すれば総務への申請メール下書きを作成、不一致ならSlackで通知します。
 
 ## 環境構築
 
@@ -17,19 +20,27 @@
 1.  **Node.jsのインストール**
     [Node.js](https://nodejs.org/)公式サイトからLTS版をインストールしてください。
 
-2.  **claspのインストール**
+2.  **依存ライブラリのインストール**
+    プロジェクトルートで以下のコマンドを実行し、claspやPrettierなどの依存ライブラリをインストールします。
+
+    ```bash
+    npm install
+    ```
+
+3.  **claspのグローバルインストール（任意）**
+    claspコマンドをグローバルで使用したい場合はインストールします。
 
     ```bash
     npm install -g @google/clasp
     ```
 
-3.  **Googleアカウントへのログイン**
+4.  **Googleアカウントへのログイン**
 
     ```bash
     clasp login
     ```
 
-4.  **プロジェクトのクローン**
+5.  **プロジェクトのクローン**
     GASのプロジェクトIDを指定して、既存のプロジェクトをクローンします。
     ```bash
     # .clasp.json に scriptId が設定済みの場合は不要
@@ -47,7 +58,8 @@ GASのエディタ画面から、「プロジェクトの設定」 > 「スク�
 | キー                   | 説明                                                             | 例                    |
 | :--------------------- | :--------------------------------------------------------------- | :-------------------- |
 | `FOLDER_ID_MENU`       | メニュー表のPDFが保存されるGoogle DriveのフォルダID              | `1a2b3c4d5e6f7g8h9i0` |
-| `FOLDER_ID_ORDER_CARD` | 注文書のExcelファイルが保存されるGoogle DriveのフォルダID        | `0i9h8g7f6e5d4c3b2a1` |
+| `FOLDER_ID_ORDER_CARD` | 注文書のExcelファイルが保存されるGoogle Drive의 フォルダID        | `0i9h8g7f6e5d4c3b2a1` |
+| `FOLDER_ID_INVOICE`    | 請求書のPDFが保存されるGoogle DriveのフォルダID                  | `z1y2x3w4v5u6t7s8r9q0` |
 | `SPREADSHEET_ID`       | 設定やメニュー情報、注文履歴を管理するGoogleスプレッドシートのID | `abcdefg12345`        |
 | `GEMINI_API_KEY`       | Gemini APIを利用するためのAPIキー                                | `AIzaSy...`           |
 
@@ -59,14 +71,22 @@ GASのエディタ画面から、「プロジェクトの設定」 > 「スク�
 
 | セル  | 説明                                                      | 例                                                       |
 | :---- | :-------------------------------------------------------- | :------------------------------------------------------- |
-| `B2`  | 添付ファイル付きメールを検索するためのGmail検索クエリ     | `from:example@example.com subject:お弁当`                |
-| `B3`  | PDF解析に使用するGeminiのモデル名                         | `gemini-pro-vision`                                      |
-| `B4`  | PDF解析を指示するためのGeminiへのプロンプト               | `このPDFから日付と弁当名をJSON形式で抽出してください...` |
+| `B2`  | お弁当屋さんのメールアドレス（下書き作成用）              | `bento@example.com`                                      |
+| `B3`  | 添付ファイル付きメールを検索するためのGmail検索クエリ     | `from:example@example.com subject:お弁当`                |
+| `B4`  | PDF解析に使用するGeminiのモデル名                         | `gemini-1.5-flash`                                       |
+| `B5`  | PDF解析を指示するためのGeminiへのプロンプト（メニュー用） | `このPDFから日付と弁当名をJSON形式で抽出してください...` |
 | `B6`  | Slackへの通知に使用するBot Token (`xoxb-` から始まる)     | `xoxb-xxxxxxxxxxxx-xxxxxxxxxxxx-xxxxxxxxxxxx`            |
 | `B7`  | Slackへの通知先のチャンネルID (`C` または `G` から始まる) | `C1234567890`                                            |
 | `B8`  | メールの送信者名（Gmail下書きの差出人名に使用）           | `ランチ発注担当`                                         |
 | `B9`  | 社名（オーダーカードExcelの会社名欄に使用）               | `株式会社サンプル`                                       |
 | `B10` | 注文アプリのURL（注文募集アナウンスで使用）               | `https://example.com/order-app`                          |
+| `B11` | 総務担当者名（請求書申請メール用）                        | `総務 太郎`                                              |
+| `B12` | 総務担当者メールアドレス（請求書申請メール用）            | `ga@example.com`                                         |
+| `B13` | 1〜8個注文時の単価                                        | `500`                                                    |
+| `B14` | 9〜13個注文時の単価                                       | `480`                                                    |
+| `B15` | 14個以上注文時の単価                                      | `450`                                                    |
+| `B16` | 請求書メールを検索するためのGmail検索クエリ               | `from:example@example.com subject:請求書`                |
+| `B17` | 請求書PDF解析用のGeminiプロンプト                         | `このPDFから請求月、合計金額、合計個数を抽出してください...` |
 
 #### `注文履歴`シート
 
@@ -119,6 +139,17 @@ sequenceDiagram
         システム->>Slack: 変更内容を通知
         システム->>弁当屋: 変更後のGmail下書き作成
     end
+    
+    Note over システム,弁当屋: 毎日（随時）
+    システム->>システム: 📄 請求書処理
+    alt 請求書到着
+        システム->>システム: 照合・保存
+        alt 照合OK
+            システム->>システム: 総務宛て申請下書き作成
+        else 照合NG
+            システム->>Slack: 差異を通知
+        end
+    end
 ```
 
 | 時刻  | 曜日 | 機能                  | 説明                                |
@@ -127,6 +158,7 @@ sequenceDiagram
 | 9:00  | 木曜 | 📊 注文状況報告       | 現在の注文状況をSlackで共有         |
 | 11:00 | 木曜 | ✅ 注文締切           | オーダーカード作成・Gmail下書き生成 |
 | 17:00 | 毎日 | 🔄 注文変更検知       | 追加・キャンセルを自動検知して通知  |
+| 随時  | 毎日 | 📄 請求書処理         | 請求書の自動保存・解析・照合        |
 
 ### 🔧 トリガー設定詳細
 
@@ -174,6 +206,12 @@ sequenceDiagram
 - 時間ベースのトリガーのタイプ: `日付ベースのタイマー`
 - 時刻を選択: `午後5時 ～ 午後6時`
 
+#### 7. 請求書メールの処理 (`triggerProcessInvoiceEmails`)
+
+- 実行するデプロイ: `Head`
+- イベントのソース: `時間主導型`
+- 時間ベースのトリガーのタイプ: `日付ベースのタイマー` (例: `1日おき`)
+
 ## 機能詳細
 
 ### 注文変更検知機能
@@ -192,11 +230,19 @@ sequenceDiagram
    - 更新したオーダーカードを添付したGmail下書きを作成（件名に【変更】を付加）
    - スナップショットを更新
 
-**検知対象:**
+### 請求書自動処理機能
 
-- 注文の追加（新規注文）
-- 注文のキャンセル（既存注文の削除）
-- 日付×サイズごとの数量変化
+月次で送られてくる請求書の処理を自動化します。
+
+**動作フロー:**
+
+1. Gmailから請求書メールを検索し、添付のPDFを取得
+2. Gemini APIで解析し、対象年月・合計個数・合計金額を抽出
+3. 抽出した年月を元にファイル名を `invoice.YYYY.MM.pdf` にリネームしてGoogle Driveに保存
+4. 注文履歴シートから対象月のデータを集計し、請求書データと照合
+5. 照合結果に応じた処理：
+   - **一致する場合**: 総務宛ての支払い申請メール下書きを自動作成
+   - **不一致の場合**: Slackで差異の内容を通知し、確認を促す
 
 ### 自動スキップ機能
 
@@ -234,6 +280,7 @@ sequenceDiagram
 ### プロセッサー（処理フロー）
 
 - `src/processors/gmailAttachmentHandler.js`: Gmailの添付ファイルをDriveに保存する機能（Excel→Sheets自動変換含む）
+- `src/processors/invoiceProcessor.js`: 請求書PDFの保存・解析・照合フローを管理する機能
 - `src/processors/pdfMenuProcessor.js`: PDFメニューの処理フロー全体を管理する機能
 - `src/processors/lunchOrderProcessor.js`: ランチ注文状況の処理とSlack通知を行うメインロジック
 - `src/processors/weeklyOrderProcessor.js`: 週次注文処理、オーダーカード転記、Gmail下書き作成の統合処理
@@ -242,12 +289,14 @@ sequenceDiagram
 ### サービス（外部API連携・基盤機能）
 
 - `src/services/geminiClient.js`: Gemini APIとの通信を処理する機能
-- `src/services/pdfParser.js`: PDFを解析し、メニュー情報を抽出する機能
+- `src/services/invoiceService.js`: 請求書データの照合・集計・通知ロジック
+- `src/services/gmailAttachmentService.js`: Gmail添付ファイル処理の共通サービス
+- `src/services/pdfParser.js`: PDFを解析し、情報を抽出する共通機能
 - `src/services/spreadsheetWriter.js`: スプレッドシートへの書き込みを処理する機能
 - `src/services/slackNotifier.js`: Slackへの通知機能
 - `src/services/spreadsheetService.js`: スプレッドシート操作の抽象化レイヤー
 - `src/services/spreadsheetExporter.js`: スプレッドシートをExcel形式でエクスポートする機能
-- `src/services/gmailDraftCreator.js`: Gmail下書きを作成する機能（通常注文・変更通知）
+- `src/services/gmailDraftCreator.js`: Gmail下書きを作成する機能（通常注文・変更・請求書申請）
 - `src/services/snapshotService.js`: 注文スナップショットの保存・読み込み機能
 - `src/services/gmailSearchService.js`: Gmailの送信履歴を検索する機能
 
@@ -285,6 +334,12 @@ GASのスクリプトエディタから手動で実行できます。
 - **`testSpreadsheetAccess()`**: スプレッドシート読み書きテスト
 - **`testOrderAnnouncement()`**: 注文募集アナウンスのテスト（実際にSlackに投稿）
 
+#### 請求書処理機能のデバッグ
+
+- **`testInvoiceProcessing()`**: 請求書処理のメインフローテスト
+- **`testInvoiceAnalysis()`**: Geminiによる請求書PDF解析の単体テスト
+- **`testInvoiceReconciliation()`**: 注文履歴との照合テスト
+
 #### 注文変更検知機能のデバッグ
 
 - **`debugListSnapshots()`**: 保存されているスナップショットの一覧表示
@@ -314,7 +369,7 @@ GASのスクリプトエディタから手動で実行できます。
 - `PropertiesService`: スクリプトプロパティの管理
 - `UrlFetchApp`: 外部リソース（Gemini API, Slack API）へのHTTPリクエスト
 - `Utilities`: ユーティリティ機能（Base64エンコードなど）
-- `Gemini API`: PDFメニューの解析
+- `Gemini API`: PDFメニュー・請求書の解析
 - `Slack API`: メッセージ投稿
 
 ### Advanced Servicesの有効化
