@@ -67,7 +67,7 @@ function _loadAndBuildFullConfig() {
     const botToken = sheet.getRange(SLACK_BOT_TOKEN_CELL).getValue();
     const channelId = sheet.getRange(SLACK_CHANNEL_ID_CELL).getValue();
     const orderAppUrl = sheet.getRange(ORDER_APP_URL_CELL).getValue();
-    const bentoMailAddress = sheet.getRange(C_MAIL_ADRESS_CELL).getValue();
+    const lunchProviderEmail = sheet.getRange(C_MAIL_ADRESS_CELL).getValue();
 
     // 総務担当者情報と単価設定
     const gaName = sheet.getRange(CELL_ADDRESSES.GENERAL_AFFAIRS_NAME).getValue();
@@ -94,7 +94,7 @@ function _loadAndBuildFullConfig() {
       gmailQuery: gmailQuery,
       gmailQueryInvoice: gmailQueryInvoice,
       orderAppUrl: orderAppUrl,
-      bentoMailAddress: bentoMailAddress,
+      lunchProviderEmail: lunchProviderEmail,
       slack: {
         botToken: botToken,
         channelId: channelId,
