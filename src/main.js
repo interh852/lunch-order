@@ -41,3 +41,11 @@ function triggerProcessWeeklyOrders() {
 function triggerDetectOrderChanges() {
   detectOrderChangesAndNotify();
 }
+
+/**
+ * 請求書メールを処理するトリガー関数
+ * 指定された間隔（例: 1日おき）で実行し、請求書の保存・解析・照合を行う
+ */
+function triggerProcessInvoiceEmails() {
+  processInvoices();
+}

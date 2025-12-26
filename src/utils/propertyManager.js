@@ -29,6 +29,15 @@ class PropertyManager {
   }
 
   /**
+   * 請求書フォルダIDを取得
+   * @returns {string} 請求書フォルダID
+   * @throws {AppError} プロパティが未設定の場合
+   */
+  getInvoiceFolderId() {
+    return this._getRequired('FOLDER_ID_INVOICE');
+  }
+
+  /**
    * スプレッドシートIDを取得
    * @returns {string} スプレッドシートID
    * @throws {AppError} プロパティが未設定の場合

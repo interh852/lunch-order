@@ -707,3 +707,154 @@ function debugProcessWeeklyOrdersWithNoMenu() {
     handleError(e, 'debugProcessWeeklyOrdersWithNoMenu');
   }
 }
+
+/**
+ * 請求書処理のテスト（デバッグ用）
+ * Gemini APIによる解析テストと、Gmail検索の確認を行います
+ */
+function testInvoiceProcessing() {
+  const logger = getContextLogger('testInvoiceProcessing');
+  logger.info('=== 請求書処理テスト開始 ===');
+
+  try {
+    const config = getConfig();
+    if (!config) {
+      logger.error('設定の取得に失敗しました');
+      return;
+    }
+
+    // 1. Gmail検索テスト
+    logger.info(`\n🔍 Gmail検索テスト (クエリ: ${config.gmailQueryInvoice})`);
+    const threads = GmailApp.search(config.gmailQueryInvoice);
+    logger.info(`ヒット件数: ${threads.length}件`);
+
+    if (threads.length > 0) {
+      // 直近30日以内のメッセージを探す
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      
+      let targetMessage = null;
+      let targetPdf = null;
+
+      // 最新のスレッドから順に探す
+      for (const thread of threads) {
+        const messages = thread.getMessages();
+        // スレッド内の新しいメッセージから順にチェック
+        for (let i = messages.length - 1; i >= 0; i--) {
+          const msg = messages[i];
+          if (msg.getDate() >= thirtyDaysAgo) {
+            const attachments = msg.getAttachments();
+            const pdf = attachments.find(a => a.getContentType() === MIME_TYPES.PDF);
+            if (pdf) {
+              targetMessage = msg;
+              targetPdf = pdf;
+              break;
+            }
+          }
+        }
+        if (targetMessage) break;
+      }
+
+      if (targetMessage && targetPdf) {
+        logger.info(`最新の対象メール: ${targetMessage.getSubject()} (${targetMessage.getDate()})`);
+        logger.info(`\n📄 PDFが見つかりました: ${targetPdf.getName()}`);
+        logger.info('Gemini APIで解析を試みます...');
+        
+        // analyzeInvoicePdfはBlobを引数に取るため、Blobを渡す
+        const result = analyzeInvoicePdf(targetPdf.copyBlob());
+        if (result) {
+          logger.info('✅ 解析成功！');
+          logger.info(JSON.stringify(result, null, 2));
+        } else {
+          logger.error('❌ 解析失敗');
+        }
+      } else {
+        logger.info('⚠️ 直近30日以内にPDF添付付きの対象メールが見つかりませんでした。');
+      }
+    } else {
+      logger.info('⚠️ テスト対象のメールが見つかりませんでした。');
+    }
+
+  } catch (e) {
+    handleError(e, 'testInvoiceProcessing');
+  }
+  
+  logger.info('\n=== テスト完了 ===');
+}
+
+/**
+ * 注文履歴集計のテスト（デバッグ用）
+ */
+function debugAggregateHistory() {
+  const logger = getContextLogger('debugAggregateHistory');
+  logger.info('=== 注文履歴集計テスト開始 ===');
+
+  try {
+    // 現在の月を対象にテスト
+    const now = new Date();
+    const targetMonth = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy/MM');
+    logger.info(`対象月: ${targetMonth}`);
+
+    const result = aggregateOrderHistory(targetMonth);
+    if (result) {
+      logger.info('✅ 集計成功！');
+      logger.info(JSON.stringify(result, null, 2));
+    } else {
+      logger.error('❌ 集計失敗');
+    }
+  } catch (e) {
+    handleError(e, 'debugAggregateHistory');
+  }
+}
+
+/**
+ * 照合・通知フローのテスト（デバッグ用）
+ * @param {Object} mockInvoiceData 擬似的な請求書データ（省略時はテスト用データを使用）
+ */
+function debugReconcileInvoice(mockInvoiceData) {
+  const logger = getContextLogger('debugReconcileInvoice');
+  logger.info('=== 照合・通知フローテスト開始 ===');
+
+  try {
+    const now = new Date();
+    const targetMonth = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy/MM');
+    
+    // データがない場合は、現在のシステム集計結果をベースに「一致」するデータを作成
+    let invoiceData = mockInvoiceData;
+    if (!invoiceData) {
+      const system = aggregateOrderHistory(targetMonth);
+      invoiceData = {
+        targetMonth: targetMonth,
+        countLarge: system.countLarge,
+        countRegular: system.countRegular,
+        countSmall: system.countSmall,
+        totalCount: system.totalCount,
+        unitPrice: system.unitPrice,
+        totalAmount: system.totalAmount
+      };
+      logger.info('システム集計結果に合わせて「一致」するダミーデータを作成しました。');
+    }
+
+    // ダミーのPDFファイル（Blob）
+    const dummyBlob = Utilities.newBlob('dummy pdf content', 'application/pdf', 'test_invoice.pdf');
+    const mockPdfFile = {
+      getBlob: () => dummyBlob,
+      getName: () => 'test_invoice.pdf',
+      getUrl: () => 'https://example.com/dummy-pdf'
+    };
+
+    logger.info('照合処理を実行中...');
+    reconcileAndProcessInvoice(invoiceData, mockPdfFile);
+    
+    logger.info('✅ テスト完了！ SlackやGmail下書きを確認してください。');
+
+    // 「不一致」パターンもテストしたい場合は、金額を少し変えて再度実行
+    logger.info('\n--- 不一致パターンのテスト ---');
+    invoiceData.totalAmount += 1000; // 金額をわざとズラす
+    reconcileAndProcessInvoice(invoiceData, mockPdfFile);
+
+  } catch (e) {
+    handleError(e, 'debugReconcileInvoice');
+  }
+}
+

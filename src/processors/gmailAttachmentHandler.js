@@ -21,7 +21,19 @@ function saveGmailAttachmentsToDrive() {
     const { gmailQuery } = config;
     logger.debug(`Gmail検索クエリ: "${gmailQuery}"`);
 
-    processGmailThreads(gmailQuery, folders);
+    // 共通サービスを使用して添付ファイルを処理
+    processGmailAttachments({
+      query: gmailQuery,
+      daysToSearch: GMAIL_SEARCH.SEARCH_DAYS_BACK, // 14日前まで検索
+      processAttachment: (attachment, message) => {
+        if (attachment.getContentType() !== MIME_TYPES.PDF && 
+            attachment.getContentType() !== MIME_TYPES.XLSX && 
+            attachment.getContentType() !== MIME_TYPES.XLS) {
+          return;
+        }
+        saveAttachment(attachment, message, folders);
+      }
+    });
 
     logger.info('すべての処理が完了しました。');
   } catch (e) {
@@ -81,36 +93,6 @@ function getScriptPropertiesAndFolders() {
     handleError(e, 'getScriptPropertiesAndFolders');
     return null;
   }
-}
-
-/**
- * Gmailの検索、スレッドの反復処理、添付ファイルの処理を行う。
- * @param {string} gmailQuery - Gmail検索クエリ
- * @param {{menu: GoogleAppsScript.Drive.Folder, orderCard: GoogleAppsScript.Drive.Folder}} folders - 保存先フォルダのオブジェクト
- */
-function processGmailThreads(gmailQuery, folders) {
-  const logger = getContextLogger('processGmailThreads');
-  const threads = GmailApp.search(gmailQuery);
-  logger.info(`${threads.length}件のスレッドが見つかりました。`);
-
-  if (threads.length === 0) {
-    logger.warn('添付ファイルのあるメールが見つかりませんでした。');
-    return;
-  }
-
-  threads.forEach((thread) => {
-    thread.getMessages().forEach((message) => {
-      const attachments = message.getAttachments();
-      if (attachments.length > 0) {
-        logger.debug(
-          `件名「${message.getSubject()}」のメールに${attachments.length}個の添付ファイルが見つかりました。`
-        );
-        attachments.forEach((attachment) => {
-          saveAttachment(attachment, message, folders);
-        });
-      }
-    });
-  });
 }
 
 /**
