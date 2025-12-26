@@ -73,10 +73,10 @@ function processWeeklyOrdersAndCreateDraft() {
       logger.error('設定の取得に失敗しました。');
       return;
     }
-    const bentoMailAddress = config.bentoMailAddress;
+    const lunchProviderEmail = config.lunchProviderEmail;
 
-    if (!bentoMailAddress) {
-      logger.error('BENTO_MAIL_ADDRESSが設定されていません。メール下書きの作成をスキップします。');
+    if (!lunchProviderEmail) {
+      logger.error('lunchProviderEmailが設定されていません。メール下書きの作成をスキップします。');
       return;
     }
 
@@ -90,7 +90,7 @@ function processWeeklyOrdersAndCreateDraft() {
 
     // 4. Gmail下書きを作成
     const draft = createOrderEmailDraft(
-      bentoMailAddress,
+      lunchProviderEmail,
       result.period,
       result.changes,
       excelAttachments

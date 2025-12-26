@@ -858,3 +858,80 @@ function debugReconcileInvoice(mockInvoiceData) {
   }
 }
 
+/**
+ * Gmail下書き作成機能のテスト（デバッグ用）
+ * 宛名の生成ロジックや添付ファイルの確認を行います
+ */
+function debugGmailDraftCreator() {
+  const logger = getContextLogger('debugGmailDraftCreator');
+  logger.info('=== Gmail下書き作成テスト開始 ===');
+
+  try {
+    const propertyManager = getPropertyManager();
+    const config = getConfig();
+
+    // 1. 注文変更メールのテスト
+    logger.info('\n--- 1. 注文変更メールのテスト ---');
+    
+    // テスト用の固定日付 (2025/12/18)
+    const testDate = new Date(2025, 11, 18); // JSの月は0から始まるため11=12月
+    const period = {
+      start: Utilities.formatDate(testDate, Session.getScriptTimeZone(), 'yyyy/MM/dd'),
+      end: Utilities.formatDate(testDate, Session.getScriptTimeZone(), 'yyyy/MM/dd')
+    };
+
+    logger.info(`期間: ${period.start} - ${period.end}`);
+    logger.info(`宛先: ${config.lunchProviderEmail}`);
+
+
+    const changes = {
+      added: [{ date: period.start, name: 'テスト太郎', size: '普通' }],
+      cancelled: [],
+      quantityChanges: []
+    };
+
+    // 下書き作成（宛先アドレスのローカルパートが宛名に使われてしまうか確認）
+    // ※本来は店名が取得できるべきだが、データがない場合はどうなるか
+    const changeDraft = createOrderChangeEmailDraft(config.lunchProviderEmail, period, changes, [], 'next');
+    if (changeDraft) {
+      logger.info(`✅ 下書き作成成功: ID=${changeDraft.getId()}`);
+      // 本文の内容をログに出せないため、Gmailで直接確認する必要があります
+      logger.info('Gmailの下書きフォルダを確認し、宛名が「〇〇弁当様」になっているか確認してください。');
+    } else {
+      logger.error('❌ 下書き作成失敗');
+    }
+
+    // 2. 請求書申請メールのテスト
+    logger.info('\n--- 2. 請求書申請メールのテスト ---');
+    
+    const invoiceData = {
+      targetMonth: '2025/11',
+      totalCount: 100,
+      totalAmount: 50000
+    };
+    
+    const dummyBlob = Utilities.newBlob('dummy pdf content', 'application/pdf', 'test_invoice.pdf');
+    const recipientEmail = config.generalAffairs.email;
+    const recipientName = config.generalAffairs.name;
+
+    logger.info(`宛先: ${recipientName} <${recipientEmail}>`);
+
+    const invoiceDraft = createInvoiceEmailDraft(recipientEmail, invoiceData, dummyBlob, recipientName);
+    
+    if (invoiceDraft) {
+      logger.info(`✅ 下書き作成成功: ID=${invoiceDraft.getId()}`);
+      logger.info('Gmailの下書きフォルダを確認し、以下の点を確認してください：');
+      logger.info('  1. 宛名の敬称が「さん」になっているか');
+      logger.info('  2. 差出人が正しく設定されているか');
+      logger.info('  3. PDFファイルが添付されているか');
+    } else {
+      logger.error('❌ 下書き作成失敗');
+    }
+
+  } catch (e) {
+    handleError(e, 'debugGmailDraftCreator');
+  }
+
+  logger.info('\n=== テスト完了 ===');
+}
+

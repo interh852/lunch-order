@@ -99,6 +99,29 @@ function formatDateToYYYYMMDD(date) {
 }
 
 /**
+ * 指定された期間（開始日〜終了日）内のすべての平日をYYYY/MM/DD形式の文字列の配列で取得します。
+ * @param {Date|string} start 開始日
+ * @param {Date|string} end 終了日
+ * @returns {string[]} 平日の日付文字列の配列
+ */
+function getWeekdaysInRange(start, end) {
+  const weekdays = [];
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  const current = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  while (current <= endDate) {
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      weekdays.push(formatDateToYYYYMMDD(current));
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return weekdays;
+}
+
+/**
  * 指定された日付がその月の第何週目かを計算します。
  * 日曜日始まりのカレンダーを基準とします。
  *
