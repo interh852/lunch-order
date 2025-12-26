@@ -89,23 +89,13 @@ function analyzeInvoicePdf(pdfBlob) {
   const logger = getContextLogger('analyzeInvoicePdf');
   const config = getConfig();
 
-  try {
-    const result = callGeminiApi(config.invoicePrompt, pdfBlob, config.modelName);
-    if (!result) return null;
-
-    // GeminiのレスポンスからJSON部分を抽出してパース
-    const responseText = result.candidates[0].content.parts[0].text;
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    } else {
-      logger.warn('Geminiからのレスポンスに有効なJSONが含まれていませんでした。', responseText);
-      return null;
-    }
-
-  } catch (e) {
-    logger.error(`PDF解析中にエラーが発生しました`, e.message);
+  // 汎用関数を使用してPDFを解析
+  const analysisResult = parsePdfWithGemini(pdfBlob, config.invoicePrompt, config.modelName);
+  
+  if (!analysisResult) {
+    logger.error('請求書PDFの解析に失敗しました。');
     return null;
   }
+
+  return analysisResult;
 }

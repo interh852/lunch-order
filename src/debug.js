@@ -760,12 +760,8 @@ function testInvoiceProcessing() {
         logger.info(`\n📄 PDFが見つかりました: ${targetPdf.getName()}`);
         logger.info('Gemini APIで解析を試みます...');
         
-        const mockFile = {
-          getName: () => targetPdf.getName(),
-          getBlob: () => targetPdf.copyBlob()
-        };
-
-        const result = analyzeInvoicePdf(mockFile);
+        // analyzeInvoicePdfはBlobを引数に取るため、Blobを渡す
+        const result = analyzeInvoicePdf(targetPdf.copyBlob());
         if (result) {
           logger.info('✅ 解析成功！');
           logger.info(JSON.stringify(result, null, 2));
