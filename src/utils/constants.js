@@ -212,6 +212,7 @@ const SIZE_KEYWORDS = {
 const GMAIL_SEARCH = {
   SUBJECT_KEYWORDS: ['弁当', 'お弁当'],
   SEARCH_DAYS_BACK: 14, // 過去14日分を検索
+  INVOICE_SEARCH_DAYS: 1, // 請求書検索の対象日数
 };
 
 // ========================================
