@@ -111,7 +111,7 @@ function createInvoiceEmailDraft(recipientEmail, invoiceData, pdfBlob, recipient
       getSenderNameFromPromptSheet() || extractNameFromEmail(Session.getActiveUser().getEmail());
 
     // 本文を生成
-    const body = `${recipientName}様\n\n` +
+    const body = `${recipientName}さん\n\n` +
       `お疲れ様です。\n` +
       `${senderName}です。\n\n` +
       `${invoiceData.targetMonth}分のお弁当代の請求書を受領しましたので、申請いたします。\n\n` +
@@ -293,8 +293,24 @@ function getStoreNameFromNextWeekOrders() {
  * @returns {string} 店名（取得できない場合は空文字列）
  */
 function getStoreNameFromPeriod(period) {
-  // 期間の開始日と終了日を含む配列を作成
-  const dateStrings = [period.start, period.end];
+  // 期間内のすべての平日を取得
+  const startDate = new Date(period.start);
+  const endDate = new Date(period.end);
+  const dateStrings = [];
+
+  const current = new Date(startDate);
+  while (current <= endDate) {
+    // 土日を除外（0: 日曜, 6: 土曜）
+    const day = current.getDay();
+    if (day !== 0 && day !== 6) {
+      dateStrings.push(
+        Utilities.formatDate(current, Session.getScriptTimeZone(), DATE_FORMATS.YYYY_MM_DD_SLASH)
+      );
+    }
+    // 次の日へ
+    current.setDate(current.getDate() + 1);
+  }
+
   return getStoreNameFromOrders(dateStrings);
 }
 

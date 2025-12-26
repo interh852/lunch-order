@@ -95,6 +95,7 @@ function _loadAndBuildFullConfig() {
       gmailQueryInvoice: gmailQueryInvoice,
       orderAppUrl: orderAppUrl,
       bentoMailAddress: bentoMailAddress,
+      lunchProviderEmail: bentoMailAddress, // エイリアスを追加
       slack: {
         botToken: botToken,
         channelId: channelId,
