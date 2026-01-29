@@ -187,7 +187,7 @@ const DATE_FORMATS = {
 // ========================================
 const ORDER_CARD_LAYOUT = {
   FIRST_WEEK_BASE_ROW: 8, // 1週目の開始行
-  ROWS_PER_WEEK: 4, // 週ごとの行数（大盛、普通、小盛、空行）
+  ROWS_PER_WEEK: 5, // 週ごとの行数（大盛、普通、小盛、ご飯なし、空行）
   COLUMN_OFFSET: 4, // D列から開始
   COLUMNS_PER_DAY: 2, // 各曜日ごとの列数
 };

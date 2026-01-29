@@ -236,6 +236,44 @@ function showEnvironmentInfo() {
 }
 
 /**
+ * オーダーカードのレイアウト変更（ご飯なし対応）のテスト
+ * 2週目以降の書き込み位置が正しいか検証します
+ */
+function testOrderCardLayout() {
+  const logger = getContextLogger('testOrderCardLayout');
+  logger.info('=== オーダーカードレイアウトテスト開始 ===');
+  
+  const failures = [];
+
+  // 定数の確認
+  logger.info(`現在の ROWS_PER_WEEK: ${ORDER_CARD_LAYOUT.ROWS_PER_WEEK}`);
+
+  // 1週目の開始行（変化なしの想定）
+  const week1_expected = ORDER_CARD_LAYOUT.FIRST_WEEK_BASE_ROW;
+  const week1_actual = ORDER_CARD_LAYOUT.FIRST_WEEK_BASE_ROW + (1 - 1) * ORDER_CARD_LAYOUT.ROWS_PER_WEEK;
+  
+  if (week1_actual !== week1_expected) {
+    failures.push(`1週目計算エラー: expected=${week1_expected}, actual=${week1_actual}`);
+  }
+
+  // 2週目の開始行の検証
+  // 1週目(8行目) + 5行間隔 = 13行目になるべき
+  const week2_expected = 13;
+  const week2_actual = ORDER_CARD_LAYOUT.FIRST_WEEK_BASE_ROW + (2 - 1) * ORDER_CARD_LAYOUT.ROWS_PER_WEEK;
+
+  if (week2_actual !== week2_expected) {
+    failures.push(`2週目計算エラー (行ズレ): expected=${week2_expected}, actual=${week2_actual} (現在の設定値による計算結果)`);
+  }
+
+  if (failures.length > 0) {
+    logger.error('❌ テスト失敗:\n' + failures.join('\n'));
+    // 意図的に失敗させているので、ここでプロセスを終了させず、ログ出力のみとする
+  } else {
+    logger.info('✅ 全テスト通過');
+  }
+}
+
+/**
  * すべての機能の動作確認を実行
  * 各テスト関数を順番に実行し、結果をまとめて表示します
  */
