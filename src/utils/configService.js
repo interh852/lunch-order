@@ -81,19 +81,19 @@ function _loadAndBuildFullConfig() {
     // 2026年2月価格改定用マトリックスの取得
     const newPrices = {
       range1_8: {
-        small: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_1_8_SMALL).getValue(),
-        regular: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_1_8_REGULAR).getValue(),
-        large: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_1_8_LARGE).getValue(),
+        small: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_CELLS.RANGE_1_8.SMALL).getValue(),
+        regular: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_CELLS.RANGE_1_8.REGULAR).getValue(),
+        large: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_CELLS.RANGE_1_8.LARGE).getValue(),
       },
       range9_13: {
-        small: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_9_13_SMALL).getValue(),
-        regular: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_9_13_REGULAR).getValue(),
-        large: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_9_13_LARGE).getValue(),
+        small: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_CELLS.RANGE_9_13.SMALL).getValue(),
+        regular: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_CELLS.RANGE_9_13.REGULAR).getValue(),
+        large: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_CELLS.RANGE_9_13.LARGE).getValue(),
       },
       range14Plus: {
-        small: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_14_PLUS_SMALL).getValue(),
-        regular: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_14_PLUS_REGULAR).getValue(),
-        large: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_14_PLUS_LARGE).getValue(),
+        small: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_CELLS.RANGE_14_PLUS.SMALL).getValue(),
+        regular: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_CELLS.RANGE_14_PLUS.REGULAR).getValue(),
+        large: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_CELLS.RANGE_14_PLUS.LARGE).getValue(),
       },
     };
 
