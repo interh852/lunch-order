@@ -38,6 +38,12 @@ const CELL_ADDRESSES = {
   PRICE_RANGE_14_PLUS: 'B15',
   GMAIL_QUERY_INVOICE: 'B16',
   INVOICE_PROMPT: 'B17',
+  // 2026年2月価格改定用
+  NEW_PRICE_CELLS: {
+    RANGE_1_8: { SMALL: 'B20', REGULAR: 'B21', LARGE: 'B22' },
+    RANGE_9_13: { SMALL: 'B23', REGULAR: 'B24', LARGE: 'B25' },
+    RANGE_14_PLUS: { SMALL: 'B26', REGULAR: 'B27', LARGE: 'B28' },
+  },
 };
 
 // オーダーカード初期化用のセルアドレス

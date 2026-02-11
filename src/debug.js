@@ -973,3 +973,45 @@ function debugGmailDraftCreator() {
   logger.info('\n=== テスト完了 ===');
 }
 
+/**
+ * 2026年2月の新価格体系を想定した集計テスト
+ * 🔴 RED: 現在のロジックではサイズ別の新価格に対応していないことを確認します
+ */
+function testNewPriceCalculation() {
+  const logger = getContextLogger('testNewPriceCalculation');
+  logger.info('=== 新価格体系集計テスト開始 (🔴 RED) ===');
+
+  try {
+    const targetMonth = '2026/02';
+    logger.info(`テスト対象月: ${targetMonth}`);
+
+    // 現在の集計ロジックを実行
+    // ※注意: 実際にシートにデータがないと結果は0になりますが、
+    // ロジック的にサイズ別の単価を持っていないことを示すのが目的です。
+    const result = aggregateOrderHistory(targetMonth);
+
+    if (!result) {
+      logger.error('❌ 集計に失敗しました');
+      return;
+    }
+
+    logger.info('【現在の集計結果】');
+    logger.info(JSON.stringify(result, null, 2));
+
+    logger.info('\n--- 検証ポイント ---');
+    logger.info('1. サイズごとに異なる単価が適用されているか？');
+    // 現在の totalAmount は totalCount * unitPrice (共通単価) で計算されている
+    // 新体系ではサイズごとに単価が違うため、この計算式自体が変わる必要がある
+    logger.info(`現在の計算方法: ${result.totalCount}個 × 共通単価${result.unitPrice}円 = ${result.totalAmount}円`);
+    logger.info('⚠️ 2026/02以降は、サイズ（小・中・大）ごとに単価が異なるため、この計算は正しくありません。');
+
+    // 理想的な結果（サイズ別の単価があるべき）とのギャップを示す
+    if (result.unitPriceLarge === undefined) {
+      logger.error('❌ 失敗: 集計結果にサイズ別の単価（unitPriceLarge等）が含まれていません。');
+    }
+
+  } catch (e) {
+    handleError(e, 'testNewPriceCalculation');
+  }
+}
+

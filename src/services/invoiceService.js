@@ -47,7 +47,7 @@ function reconcileAndProcessInvoice(invoiceData, invoicePdf) {
 function aggregateOrderHistory(targetMonth) {
   const logger = getContextLogger('aggregateOrderHistory');
   const config = getConfig();
-  
+
   try {
     const spreadsheet = SpreadsheetApp.openById(config.spreadsheetId);
     const sheet = spreadsheet.getSheetByName(ORDER_HISTORY_SHEET_NAME);
@@ -65,17 +65,14 @@ function aggregateOrderHistory(targetMonth) {
         countSmall: 0,
         totalCount: 0,
         unitPrice: 0,
-        totalAmount: 0
+        totalAmount: 0,
       };
     }
 
     // データを一括取得
-    const data = sheet.getRange(
-      SHEET_DATA_START_ROW, 
-      1, 
-      lastRow - SHEET_DATA_START_ROW + 1, 
-      sheet.getLastColumn()
-    ).getValues();
+    const data = sheet
+      .getRange(SHEET_DATA_START_ROW, 1, lastRow - SHEET_DATA_START_ROW + 1, sheet.getLastColumn())
+      .getValues();
 
     // 集計用変数
     let countLarge = 0;
@@ -84,7 +81,7 @@ function aggregateOrderHistory(targetMonth) {
 
     // targetMonth (YYYY/MM) と一致するデータを集計
     // 日付カラムは D列 (index 3) を想定
-    data.forEach(row => {
+    data.forEach((row) => {
       const dateVal = row[ORDER_HISTORY_COLUMNS.ORDER_DATE];
       if (!dateVal) return;
 
@@ -95,7 +92,7 @@ function aggregateOrderHistory(targetMonth) {
         // サイズカラムは G列 (index 6) を想定
         const sizeStr = row[ORDER_HISTORY_COLUMNS.ORDER_SIZE];
         const category = normalizeSizeCategory(sizeStr);
-        
+
         // 個数カラムは H列 (index 7) を想定。もし空なら1とみなすか、0とみなすか...
         // 既存ロジックに合わせて個数カラムを使用
         const count = Number(row[ORDER_HISTORY_COLUMNS.ORDER_COUNT]) || 1;
@@ -107,18 +104,24 @@ function aggregateOrderHistory(targetMonth) {
     });
 
     const totalCount = countLarge + countRegular + countSmall;
-    
-    // 単価の決定
-    let unitPrice = 0;
+
+    // 新価格体系（サイズ別）を適用
+    let prices;
     if (totalCount >= 14) {
-      unitPrice = Number(config.prices.range14Plus);
+      prices = config.newPrices.range14Plus;
     } else if (totalCount >= 9) {
-      unitPrice = Number(config.prices.range9_13);
-    } else if (totalCount >= 1) {
-      unitPrice = Number(config.prices.range1_8);
+      prices = config.newPrices.range9_13;
+    } else {
+      prices = config.newPrices.range1_8;
     }
 
-    const totalAmount = totalCount * unitPrice;
+    const totalAmount =
+      countSmall * Number(prices.small) +
+      countRegular * Number(prices.regular) +
+      countLarge * Number(prices.large);
+
+    // 通知用に「普通（中盛り）」の単価を代表単価としてセット
+    const unitPrice = Number(prices.regular);
 
     return {
       countLarge,
@@ -126,9 +129,11 @@ function aggregateOrderHistory(targetMonth) {
       countSmall,
       totalCount,
       unitPrice,
-      totalAmount
+      unitPriceSmall: Number(prices.small),
+      unitPriceRegular: Number(prices.regular),
+      unitPriceLarge: Number(prices.large),
+      totalAmount,
     };
-
   } catch (e) {
     handleError(e, 'aggregateOrderHistory');
     return null;
