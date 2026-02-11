@@ -59,7 +59,7 @@ function formatOrderChangesForSlack(changes, weekType, detectedAt) {
  */
 function formatLunchOrdersForSlack(orders) {
   if (!orders || orders.length === 0) {
-    return '【次回の弁当注文状況🍱】\n次回の弁当注文はありませんでした。';
+    return '【次回の弁当注文状況🍱】\n次回の弁当注文はありませんでした。\n注文締め切りは本日AM11:00まで！';
   }
 
   // 日付ごとに注文をグループ化
@@ -89,6 +89,8 @@ function formatLunchOrdersForSlack(orders) {
         .join(', ');
       message += `- ${formattedDate}: ${orderDetails}\n`;
     });
+
+  message += '\n注文締め切りは本日AM11:00まで！';
 
   return message;
 }
