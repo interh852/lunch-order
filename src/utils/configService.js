@@ -78,6 +78,25 @@ function _loadAndBuildFullConfig() {
     const gmailQueryInvoice = sheet.getRange(CELL_ADDRESSES.GMAIL_QUERY_INVOICE).getValue();
     const invoicePrompt = sheet.getRange(CELL_ADDRESSES.INVOICE_PROMPT).getValue();
 
+    // 2026年2月価格改定用マトリックスの取得
+    const newPrices = {
+      range1_8: {
+        small: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_1_8_SMALL).getValue(),
+        regular: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_1_8_REGULAR).getValue(),
+        large: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_1_8_LARGE).getValue(),
+      },
+      range9_13: {
+        small: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_9_13_SMALL).getValue(),
+        regular: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_9_13_REGULAR).getValue(),
+        large: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_9_13_LARGE).getValue(),
+      },
+      range14Plus: {
+        small: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_14_PLUS_SMALL).getValue(),
+        regular: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_14_PLUS_REGULAR).getValue(),
+        large: sheet.getRange(CELL_ADDRESSES.NEW_PRICE_RANGE_14_PLUS_LARGE).getValue(),
+      },
+    };
+
     // 必須項目のチェック
     if (!geminiPrompt || !gmailQuery || !botToken || !channelId || !gmailQueryInvoice || !invoicePrompt) {
       logger.error(
@@ -108,6 +127,7 @@ function _loadAndBuildFullConfig() {
         range9_13: price9_13,
         range14Plus: price14Plus,
       },
+      newPrices: newPrices,
     };
   } catch (e) {
     handleError(e, '_loadAndBuildFullConfig');
