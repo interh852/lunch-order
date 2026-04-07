@@ -77,3 +77,29 @@ try {
   console.error('Runtime Error:', e);
   process.exit(1);
 }
+
+// --- Vertex AI Migration: Step 1 (Constants) Test ---
+console.log('\n--- Testing Vertex AI Migration: Step 1 (Constants) ---');
+
+const PK = context.PROPERTY_KEYS;
+const VC = context.VALIDATION_CONFIG;
+const reqProps = VC.requiredProperties;
+
+console.log('Current Required Properties:', JSON.stringify(reqProps));
+
+// 期待される変更
+const expectedNewKeys = ['VERTEX_AI_PROJECT_ID', 'VERTEX_AI_LOCATION'];
+const missingKeys = expectedNewKeys.filter(key => {
+  const propValue = PK[key];
+  return !reqProps.includes(propValue);
+});
+const stillHasOldKey = reqProps.includes(PK.GEMINI_API_KEY);
+
+if (missingKeys.length === 0 && !stillHasOldKey) {
+  console.log('✅ Constants validation passed for Vertex AI.');
+} else {
+  console.error('❌ Constants validation FAILED for Vertex AI.');
+  if (missingKeys.length > 0) console.error('Missing keys in requiredProperties:', missingKeys);
+  if (stillHasOldKey) console.error('GEMINI_API_KEY still exists in requiredProperties.');
+  process.exit(1);
+}

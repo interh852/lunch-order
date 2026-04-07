@@ -25,7 +25,16 @@ global.Session = {
 
 global.PropertiesService = {
   getScriptProperties: () => ({
-    getProperty: (key) => 'mock-id-' + key
+    _props: {
+      'FOLDER_ID_MENU': 'mock-menu-folder-id',
+      'FOLDER_ID_ORDER_CARD': 'mock-order-card-folder-id',
+      'FOLDER_ID_INVOICE': 'mock-invoice-folder-id',
+      'SPREADSHEET_ID': 'mock-spreadsheet-id',
+      'GEMINI_API_KEY': 'mock-api-key'
+    },
+    getProperty: function(key) {
+      return this._props[key] || null;
+    }
   })
 };
 
