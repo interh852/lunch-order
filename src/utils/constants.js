@@ -152,7 +152,6 @@ const HTTP_METHODS = {
 // ========================================
 const API_ENDPOINTS = {
   SLACK_POST_MESSAGE: 'https://slack.com/api/chat.postMessage',
-  GEMINI_BASE_URL: 'https://generativelanguage.googleapis.com/v1beta/models',
 };
 
 // ========================================
