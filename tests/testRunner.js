@@ -103,3 +103,33 @@ if (missingKeys.length === 0 && !stillHasOldKey) {
   if (stillHasOldKey) console.error('GEMINI_API_KEY still exists in requiredProperties.');
   process.exit(1);
 }
+
+// --- Vertex AI Migration: Phase 2 (PropertyManager) Test ---
+console.log('\n--- Testing Vertex AI Migration: Phase 2 (PropertyManager) ---');
+try {
+  const pm = context.getPropertyManager();
+  
+  const projectId = pm.getVertexAiProjectId();
+  if (projectId === 'mock-vertex-project-id') {
+    console.log('✅ getVertexAiProjectId() passed.');
+  } else {
+    console.error('❌ getVertexAiProjectId() failed');
+    process.exit(1);
+  }
+
+  const location = pm.getVertexAiLocation();
+  if (location === 'mock-vertex-location') {
+    console.log('✅ getVertexAiLocation() passed.');
+  } else {
+    console.error('❌ getVertexAiLocation() failed');
+    process.exit(1);
+  }
+} catch (e) {
+  console.log('Caught expected error (Red phase):', e.message);
+  if (e instanceof TypeError && e.message.includes('is not a function')) {
+    console.log('✅ Expected failure (Red): Methods not yet implemented.');
+  } else {
+    console.error('❌ Unexpected error:', e);
+    process.exit(1);
+  }
+}

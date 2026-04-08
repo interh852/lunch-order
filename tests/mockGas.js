@@ -30,7 +30,9 @@ global.PropertiesService = {
       'FOLDER_ID_ORDER_CARD': 'mock-order-card-folder-id',
       'FOLDER_ID_INVOICE': 'mock-invoice-folder-id',
       'SPREADSHEET_ID': 'mock-spreadsheet-id',
-      'GEMINI_API_KEY': 'mock-api-key'
+      'GEMINI_API_KEY': 'mock-api-key',
+      'VERTEX_AI_PROJECT_ID': 'mock-vertex-project-id',
+      'VERTEX_AI_LOCATION': 'mock-vertex-location'
     },
     getProperty: function(key) {
       return this._props[key] || null;
