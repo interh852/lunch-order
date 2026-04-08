@@ -16,11 +16,26 @@ global.Utilities = {
     if (format === 'yyyy/MM') return `${y}/${m}`;
     if (format === 'yyyy-MM-dd HH:mm:ss') return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
     return date.toString();
-  }
+  },
+  base64Encode: (data) => Buffer.from(data).toString('base64')
 };
 
 global.Session = {
   getScriptTimeZone: () => 'Asia/Tokyo'
+};
+
+global.ScriptApp = {
+  getOAuthToken: () => 'mock-oauth-token'
+};
+
+global.UrlFetchApp = {
+  fetch: (url, options) => {
+    console.log(`[GAS Mock] UrlFetchApp.fetch called with URL: ${url}`);
+    return {
+      getResponseCode: () => 200,
+      getContentText: () => JSON.stringify({ candidates: [{ content: { parts: [{ text: 'mock response' }] } }] })
+    };
+  }
 };
 
 global.PropertiesService = {
