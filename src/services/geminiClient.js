@@ -3,7 +3,7 @@
  */
 
 /**
- * Gemini APIを呼び出し、レスポンスを返す
+ * Gemini API (Vertex AI) を呼び出し、レスポンスを返す
  * @param {string} prompt - Geminiに送信するプロンプト
  * @param {GoogleAppsScript.Base.Blob} pdfBlob - 解析対象のPDFファイルのBlob
  * @param {string} modelName - 使用するGeminiのモデル名
@@ -13,8 +13,10 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
   const logger = getContextLogger('callGeminiApi');
 
   try {
-    const propertyManager = getPropertyManager();
-    const apiKey = propertyManager.getGeminiApiKey();
+    const pm = getPropertyManager();
+    const projectId = pm.getVertexAiProjectId();
+    const location = pm.getVertexAiLocation();
+    const accessToken = ScriptApp.getOAuthToken();
 
     if (!modelName) {
       logger.error('エラー: モデル名が指定されていません。');
@@ -27,11 +29,12 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
     const requestBody = {
       contents: [
         {
+          role: 'user',
           parts: [
             { text: prompt },
             {
               inline_data: {
-                mime_type: MIME_TYPES.PDF,
+                mime_type: pdfBlob.getContentType(),
                 data: pdfBase64,
               },
             },
@@ -44,18 +47,28 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
       method: HTTP_METHODS.POST,
       contentType: HTTP_CONTENT_TYPES.JSON,
       payload: JSON.stringify(requestBody),
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
       muteHttpExceptions: true, // エラー時に例外をスローさせない
     };
 
-    const url = `${API_ENDPOINTS.GEMINI_BASE_URL}/${modelName}:generateContent?key=${apiKey}`;
+    // Vertex AI REST API URL
+    const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelName}:streamGenerateContent`;
+    
     const response = UrlFetchApp.fetch(url, options);
     const responseCode = response.getResponseCode();
     const responseBody = response.getContentText();
 
     if (responseCode === 200) {
-      return JSON.parse(responseBody);
+      const parsedResponse = JSON.parse(responseBody);
+      // streamGenerateContent の場合は配列で返ってくるため、最初の要素を取得
+      if (Array.isArray(parsedResponse)) {
+        return parsedResponse[0];
+      }
+      return parsedResponse;
     } else {
-      logger.error(`Gemini APIの呼び出しに失敗しました。ステータスコード: ${responseCode}`);
+      logger.error(`Gemini API (Vertex AI) の呼び出しに失敗しました。ステータスコード: ${responseCode}`);
       logger.error(`レスポンス: ${responseBody}`);
       return null;
     }

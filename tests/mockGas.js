@@ -16,16 +16,42 @@ global.Utilities = {
     if (format === 'yyyy/MM') return `${y}/${m}`;
     if (format === 'yyyy-MM-dd HH:mm:ss') return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
     return date.toString();
-  }
+  },
+  base64Encode: (data) => Buffer.from(data).toString('base64')
 };
 
 global.Session = {
   getScriptTimeZone: () => 'Asia/Tokyo'
 };
 
+global.ScriptApp = {
+  getOAuthToken: () => 'mock-oauth-token'
+};
+
+global.UrlFetchApp = {
+  fetch: (url, options) => {
+    console.log(`[GAS Mock] UrlFetchApp.fetch called with URL: ${url}`);
+    return {
+      getResponseCode: () => 200,
+      getContentText: () => JSON.stringify({ candidates: [{ content: { parts: [{ text: 'mock response' }] } }] })
+    };
+  }
+};
+
 global.PropertiesService = {
   getScriptProperties: () => ({
-    getProperty: (key) => 'mock-id-' + key
+    _props: {
+      'FOLDER_ID_MENU': 'mock-menu-folder-id',
+      'FOLDER_ID_ORDER_CARD': 'mock-order-card-folder-id',
+      'FOLDER_ID_INVOICE': 'mock-invoice-folder-id',
+      'SPREADSHEET_ID': 'mock-spreadsheet-id',
+      'GEMINI_API_KEY': 'mock-api-key',
+      'VERTEX_AI_PROJECT_ID': 'mock-vertex-project-id',
+      'VERTEX_AI_LOCATION': 'mock-vertex-location'
+    },
+    getProperty: function(key) {
+      return this._props[key] || null;
+    }
   })
 };
 

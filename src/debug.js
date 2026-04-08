@@ -13,7 +13,7 @@ function checkConfiguration() {
 
   const result = validateConfiguration();
 
-  if (result.isValid) {
+  if (result.valid) {
     logger.info('✅ 設定は正常です。すべての必須項目が設定されています。');
   } else {
     logger.error('❌ 設定にエラーがあります:');
@@ -76,9 +76,12 @@ function testGeminiConnection() {
       return null;
     }
 
-    // テスト用の簡単なプロンプトとダミーPDFで接続確認
+    // テスト用の簡単なプロンプトと、最小限の有効なPDFバイナリ（1x1ピクセルの空白ページ相当）
     const testPrompt = "Hello! Please respond with 'OK' if you can read this message.";
-    const testBlob = Utilities.newBlob('test content', 'text/plain', 'test.txt');
+    // 最小限のPDF構造を持つBase64データ
+    const minPdfBase64 = 'JVBERi0xLjAKMSAwIG9iajw8L1BhZ2VzIDIgMCBSPj5lbmRvYmogMiAwIG9iajw8L0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iaiAzIDAgb2JqPDwvUGFyZW50IDIgMCBSL01lZGlhQm94WzAgMCAzIDNdPj5lbmRvYmoKdHJhaWxlcjw8L1Jvb3QgMSAwIFI+PgpzdGFydHhyZWYKOTIKJSVFT0Y=';
+    const pdfBytes = Utilities.base64Decode(minPdfBase64);
+    const testBlob = Utilities.newBlob(pdfBytes, 'application/pdf', 'test.pdf');
 
     logger.info('Gemini APIを呼び出し中...');
     const result = callGeminiApi(testPrompt, testBlob, config.modelName);
@@ -295,7 +298,7 @@ function runAllTests() {
     // 1. 設定バリデーション
     logger.info('\n--- 1/5: 設定バリデーション ---');
     const configResult = checkConfiguration();
-    results['1. 設定バリデーション'] = configResult && configResult.isValid;
+    results['1. 設定バリデーション'] = configResult && configResult.valid;
 
     // 2. Gmail検索テスト
     logger.info('\n--- 2/5: Gmail検索テスト ---');

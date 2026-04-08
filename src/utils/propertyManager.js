@@ -56,6 +56,24 @@ class PropertyManager {
   }
 
   /**
+   * Vertex AI プロジェクトIDを取得
+   * @returns {string} Vertex AI プロジェクトID
+   * @throws {AppError} プロパティが未設定の場合
+   */
+  getVertexAiProjectId() {
+    return this._getRequired('VERTEX_AI_PROJECT_ID');
+  }
+
+  /**
+   * Vertex AI ロケーションを取得
+   * @returns {string} Vertex AI ロケーション
+   * @throws {AppError} プロパティが未設定の場合
+   */
+  getVertexAiLocation() {
+    return this._getRequired('VERTEX_AI_LOCATION');
+  }
+
+  /**
    * 必須プロパティを取得（未設定の場合はエラー）
    * @private
    * @param {string} key プロパティのキー
