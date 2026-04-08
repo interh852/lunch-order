@@ -29,11 +29,12 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
     const requestBody = {
       contents: [
         {
+          role: 'user',
           parts: [
             { text: prompt },
             {
               inline_data: {
-                mime_type: MIME_TYPES.PDF,
+                mime_type: pdfBlob.getContentType(),
                 data: pdfBase64,
               },
             },
