@@ -25,6 +25,7 @@ function saveGmailAttachmentsToDrive() {
     processGmailAttachments({
       query: gmailQuery,
       daysToSearch: GMAIL_SEARCH.SEARCH_DAYS_BACK, // 14日前まで検索
+      onlyLatest: true,
       processAttachment: (attachment, message) => {
         if (attachment.getContentType() !== MIME_TYPES.PDF && 
             attachment.getContentType() !== MIME_TYPES.XLSX && 

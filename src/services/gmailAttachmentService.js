@@ -13,7 +13,7 @@
  */
 function processGmailAttachments(options) {
   const logger = getContextLogger('processGmailAttachments');
-  const { query, daysToSearch = 1, processAttachment } = options;
+  const { query, daysToSearch = 1, processAttachment, onlyLatest = false } = options;
 
   if (!query) {
     logger.error('検索クエリが指定されていません。');
@@ -27,10 +27,15 @@ function processGmailAttachments(options) {
 
   try {
     // メール検索
-    const threads = GmailApp.search(query);
+    let threads = GmailApp.search(query);
     if (threads.length === 0) {
       logger.info(`条件に一致するメールは見つかりませんでした。(Query: ${query})`);
       return;
+    }
+
+    // 最新の1件のみを対象にする場合
+    if (onlyLatest) {
+      threads = [threads[0]];
     }
 
     // 期間フィルタリング用の日時
@@ -40,11 +45,16 @@ function processGmailAttachments(options) {
     let processedCount = 0;
 
     threads.forEach((thread) => {
-      const messages = thread.getMessages();
+      let messages = thread.getMessages();
+
+      // 最新の1メッセージのみを対象にする場合
+      if (onlyLatest && messages.length > 0) {
+        messages = [messages[messages.length - 1]];
+      }
 
       messages.forEach((message) => {
         // 日付フィルタリング
-        if (message.getDate() < thresholdDate) {
+        if (!onlyLatest && message.getDate() < thresholdDate) {
           return;
         }
 

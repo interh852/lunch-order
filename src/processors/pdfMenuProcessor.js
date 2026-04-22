@@ -106,9 +106,21 @@ function processSinglePdfFile(pdfFile, storeName) {
     return false;
   }
 
-  const menuDataFromGemini = menuResult.data;
-  if (!menuDataFromGemini || menuDataFromGemini.length === 0) {
-    logger.warn(`ファイル「${fileName}」からはメニューデータが抽出されませんでした。`);
+  let menuDataFromGemini = menuResult.data;
+
+  // 配列でない場合、オブジェクトの中にある配列を探す (例: { "menu": [...] })
+  if (menuDataFromGemini && !Array.isArray(menuDataFromGemini)) {
+    const keys = Object.keys(menuDataFromGemini);
+    for (const key of keys) {
+      if (Array.isArray(menuDataFromGemini[key])) {
+        menuDataFromGemini = menuDataFromGemini[key];
+        break;
+      }
+    }
+  }
+
+  if (!Array.isArray(menuDataFromGemini) || menuDataFromGemini.length === 0) {
+    logger.warn(`ファイル「${fileName}」からは有効なメニュー配列が抽出されませんでした。`);
     return false;
   }
 

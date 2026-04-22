@@ -41,6 +41,10 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
           ],
         },
       ],
+      generationConfig: {
+        maxOutputTokens: 8192,
+        responseMimeType: 'application/json',
+      },
     };
 
     const options = {
@@ -54,18 +58,25 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
     };
 
     // Vertex AI REST API URL
-    const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelName}:streamGenerateContent`;
+    const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelName}:generateContent`;
     
     const response = UrlFetchApp.fetch(url, options);
     const responseCode = response.getResponseCode();
     const responseBody = response.getContentText();
 
     if (responseCode === 200) {
-      const parsedResponse = JSON.parse(responseBody);
-      // streamGenerateContent の場合は配列で返ってくるため、最初の要素を取得
+      let parsedResponse = JSON.parse(responseBody);
+      
+      // :streamGenerateContent などの名残や互換性で配列が返ってきた場合は、先頭のオブジェクトを返す
       if (Array.isArray(parsedResponse)) {
-        return parsedResponse[0];
+        if (parsedResponse.length > 0) {
+          parsedResponse = parsedResponse[0];
+        } else {
+          logger.error('空の配列が返されました。');
+          return null;
+        }
       }
+      
       return parsedResponse;
     } else {
       logger.error(`Gemini API (Vertex AI) の呼び出しに失敗しました。ステータスコード: ${responseCode}`);

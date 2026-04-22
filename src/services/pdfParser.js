@@ -16,7 +16,13 @@ function parsePdfWithGemini(pdfBlob, prompt, modelName) {
     const geminiResponse = callGeminiApi(prompt, pdfBlob, modelName);
 
     if (geminiResponse && geminiResponse.candidates && geminiResponse.candidates.length > 0) {
-      const content = geminiResponse.candidates[0].content.parts[0].text;
+      const candidate = geminiResponse.candidates[0];
+      const content = candidate?.content?.parts?.[0]?.text;
+
+      if (!content) {
+        logger.error('Geminiレスポンスからテキストを抽出できませんでした。レスポンス構造:', JSON.stringify(candidate));
+        return null;
+      }
       
       // JSONブロックの抽出（Markdownの除去だけでなく、テキスト内のJSONブロックを探す）
       // 1. ```json ... ``` のパターン
