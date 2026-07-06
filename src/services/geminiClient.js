@@ -58,7 +58,11 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
     };
 
     // Vertex AI REST API URL
-    const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelName}:generateContent`;
+    const host =
+      location === 'global'
+        ? 'aiplatform.googleapis.com'
+        : `${location}-aiplatform.googleapis.com`;
+    const url = `https://${host}/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelName}:generateContent`;
     
     const response = UrlFetchApp.fetch(url, options);
     const responseCode = response.getResponseCode();
