@@ -52,21 +52,23 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
       contentType: HTTP_CONTENT_TYPES.JSON,
       payload: JSON.stringify(requestBody),
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       muteHttpExceptions: true, // エラー時に例外をスローさせない
     };
 
     // Vertex AI REST API URL
-    const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelName}:generateContent`;
-    
+    const host =
+      location === 'global' ? 'aiplatform.googleapis.com' : `${location}-aiplatform.googleapis.com`;
+    const url = `https://${host}/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelName}:generateContent`;
+
     const response = UrlFetchApp.fetch(url, options);
     const responseCode = response.getResponseCode();
     const responseBody = response.getContentText();
 
     if (responseCode === 200) {
       let parsedResponse = JSON.parse(responseBody);
-      
+
       // :streamGenerateContent などの名残や互換性で配列が返ってきた場合は、先頭のオブジェクトを返す
       if (Array.isArray(parsedResponse)) {
         if (parsedResponse.length > 0) {
@@ -76,10 +78,12 @@ function callGeminiApi(prompt, pdfBlob, modelName) {
           return null;
         }
       }
-      
+
       return parsedResponse;
     } else {
-      logger.error(`Gemini API (Vertex AI) の呼び出しに失敗しました。ステータスコード: ${responseCode}`);
+      logger.error(
+        `Gemini API (Vertex AI) の呼び出しに失敗しました。ステータスコード: ${responseCode}`
+      );
       logger.error(`レスポンス: ${responseBody}`);
       return null;
     }
