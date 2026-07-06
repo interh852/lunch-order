@@ -237,3 +237,50 @@ try {
 } catch (e) {
   console.error('Unexpected error during Phase 4 test:', e);
 }
+
+// --- Vertex AI Migration: Phase 5 (Global Region Support) Test ---
+console.log('\n--- Testing Vertex AI Migration: Phase 5 (Global Region Support) ---');
+try {
+  const mockBlob = {
+    getBytes: () => new Uint8Array([0, 1, 2]),
+    getContentType: () => 'application/pdf'
+  };
+
+  const pm = context.getPropertyManager();
+  // Override the mocked property for this test
+  const originalLocation = pm.properties._props['VERTEX_AI_LOCATION'];
+  pm.properties._props['VERTEX_AI_LOCATION'] = 'global';
+
+  // Temporarily capture UrlFetchApp.fetch
+  let capturedUrl = '';
+  const originalFetch = global.UrlFetchApp.fetch;
+  
+  global.UrlFetchApp.fetch = (url, options) => {
+    capturedUrl = url || '';
+    return {
+      getResponseCode: () => 200,
+      getContentText: () => JSON.stringify({ candidates: [{ content: { parts: [{ text: 'mock response' }] } }] })
+    };
+  };
+
+  // Execute
+  context.callGeminiApi('dummy prompt', mockBlob, 'gemini-1.5-flash');
+
+  // Verify
+  const expectedHostPrefix = 'https://aiplatform.googleapis.com';
+  console.log(`Checking URL for global region: ${capturedUrl}`);
+  if (capturedUrl.startsWith(expectedHostPrefix)) {
+    console.log('✅ URL format is correct for global region.');
+  } else {
+    console.error(`❌ URL format FAILED. Expected to start with: ${expectedHostPrefix}, Got: ${capturedUrl}`);
+    process.exit(1);
+  }
+
+  // Restore
+  pm.properties._props['VERTEX_AI_LOCATION'] = originalLocation;
+  global.UrlFetchApp.fetch = originalFetch;
+
+} catch (e) {
+  console.error('Unexpected error during Phase 5 test:', e);
+  process.exit(1);
+}
